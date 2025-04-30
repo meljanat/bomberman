@@ -1,0 +1,126 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #333;
+}
+
+#game-grid {
+    display: grid;
+    grid-template-columns: repeat(11, 40px);
+    grid-template-rows: repeat(11, 40px);
+    gap: 2px;
+    margin: 20px auto;
+    width: 420px;
+}
+
+.tile {
+    width: 40px;
+    height: 40px;
+    background-color: rgb(0, 200, 13);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wall {
+    background-color: #350000;
+}
+
+.block {
+    background-color: #937800;
+}
+
+.player {
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+}
+
+.player.p1 {
+    background-color: blue;
+}
+
+.player.p2 {
+    background-color: red;
+}
+
+.player.p3 {
+    background-color: green;
+}
+
+.player.p4 {
+    background-color: yellow;
+}
+
+.bomb {
+    width: 30px;
+    height: 30px;
+    background-color: rgb(0, 0, 0);
+    border-radius: 50%;
+}
+
+.explosion {
+    background-color: orange;
+}
+
+#start-div {
+    background-color: #2f2424aa;
+    min-width: 300px;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#start-div p {
+    font-weight: bold;
+    font-size: 20px;
+    color: #000000;
+    margin: 0;
+}
+
+#name-error {
+    font-weight: bold;
+    color: red;
+    margin: 0;
+}
+
+#start-div input {
+    color: #000000;
+    background-color: #6f4444b3;
+    border-radius: 5px;
+    border: 1px solid #000000;
+    padding: 5px;
+}
+
+#start-div input::placeholder {
+    color: #0000009c;
+}
+
+#start-div input:focus {
+    outline: none;
+}
+
+#start-div button {
+    font-size: 24px;
+    background-color: #880000;
+    color: #000000;
+    border: 2px solid #000000;
+    padding: 5px 10px;
+    border-radius: 10px;
+    margin: 30px 0;
+}
+
+#start-div button:hover {
+    background-color: #ff0000;
+}
