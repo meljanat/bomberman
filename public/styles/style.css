@@ -1,0 +1,587 @@
+body {
+    background-image: url('../styles/image.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    /* overflow: hidden; */
+    background-color: #333;
+    
+}
+
+.game-container {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 82%;
+    /* background-color: rgba(239, 228, 148, 0.6); */
+    background: linear-gradient(135deg, #fdffea41, #1b2e4bb7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 1000;
+    border-radius: 5%;
+    box-shadow: 0 30px 50px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    animation: fadeIn 0.6s ease-out;
+    padding: 20px;
+    /* overflow: hidden; */
+}
+
+/* .game-container h1 {
+    font-size: 2.5rem;
+    color: #2f2f2f;
+    margin-bottom: 20px;
+}
+
+.game-container button {
+    padding: 12px 24px;
+    margin: 10px;
+    border: none;
+    border-radius: 12px;
+    background-color: #ffcc00;
+    color: #333;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.game-container button:hover {
+    background-color: #ffd633;
+    transform: scale(1.05);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+} */
+
+/* Optional: fade-in animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Main container */
+.menu-container {
+    /* display: flex; */
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    max-width: 1000px;
+    width: 100%;
+    height: 100%;
+}
+
+/* Player image section */
+.player-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.player-avatar {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 18px;
+    border-radius: 50%;
+    border: 6px solid #fff;
+    box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.3),
+        0 0 0 10px rgba(255, 255, 255, 0.1),
+        inset 0 0 20px rgba(255, 255, 255, 0.2);
+    animation: playerPulse 2s ease-in-out infinite;
+    transition: transform 0.3s ease;
+    object-fit: cover;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+}
+
+.player-avatar:hover {
+    transform: scale(1.05);
+}
+
+@keyframes playerPulse {
+    0%, 100% { 
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.3),
+            0 0 0 10px rgba(255, 255, 255, 0.1),
+            0 0 30px rgba(255, 107, 107, 0.5);
+    }
+    50% { 
+        box-shadow: 
+            0 25px 50px rgba(0, 0, 0, 0.4),
+            0 0 0 15px rgba(255, 255, 255, 0.2),
+            0 0 50px rgba(255, 107, 107, 0.8);
+    }
+}
+
+/* Menu form section */
+.menu-form {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transform: translateY(0);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    /* overflow-y: scroll; */
+}
+
+.menu-form::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.menu-form:hover {
+    transform: translateY(-5px);
+    box-shadow: 
+        0 35px 70px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Typography */
+.welcome-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+    from { filter: drop-shadow(0 0 5px rgba(102, 126, 234, 0.3)); }
+    to { filter: drop-shadow(0 0 15px rgba(118, 75, 162, 0.5)); }
+}
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    font-weight: 500;
+}
+
+/* Messages */
+.error-message {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.status-message {
+    background: linear-gradient(135deg, #4ecdc4, #44a08d);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+    animation: statusPulse 1s ease-in-out;
+}
+
+@keyframes statusPulse {
+    0% { transform: scale(0.95); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Input group */
+.input-group {
+    margin-bottom: 25px;
+}
+
+.input-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+}
+
+.name-input {
+    /* width: 100%; */
+    padding: 15px 20px;
+    border: 2px solid #e1e5e9;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+    outline: none;
+    font-weight: 500;
+}
+
+.name-input:focus {
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 
+        0 0 0 3px rgba(102, 126, 234, 0.1),
+        0 4px 15px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.name-input::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+/* Button group */
+.button-group {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-width: 120px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.5s ease;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    background: linear-gradient(135deg, #bbb, #999);
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.6;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    color: #495057;
+    border: 2px solid #dee2e6;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Game container and other screens */
+.game-container {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.game-info {
+    text-align: center;
+    margin-bottom: 20px;
+    color: white;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.tile {
+    width: 30px;
+    height: 30px;
+    background: #90EE90;
+    position: relative;
+    border-radius: 3px;
+}
+
+.tile.wall {
+    background: #8B4513;
+}
+
+.tile.block {
+    background: #CD853F;
+}
+
+.tile.explosion {
+    background: #FF4500;
+    animation: explosion 0.5s ease-out;
+}
+
+@keyframes explosion {
+    0% { background: #FF4500; transform: scale(1); }
+    50% { background: #FFD700; transform: scale(1.2); }
+    100% { background: #FF4500; transform: scale(1); }
+}
+
+.player {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.player.p0 { background: #FF6B6B; }
+.player.p1 { background: #4ECDC4; }
+.player.p2 { background: #45B7D1; }
+.player.p3 { background: #96CEB4; }
+
+.bomb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    background: #333;
+    border-radius: 50%;
+    animation: bombBlink 0.5s infinite;
+}
+
+@keyframes bombBlink {
+    0%, 50% { background: #333; }
+    51%, 100% { background: #666; }
+}
+
+.controls {
+    text-align: center;
+    color: white;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .menu-container {
+        flex-direction: column;
+        padding: 20px;
+        gap: 30px;
+    }
+    
+    .player-avatar {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .menu-form {
+        padding: 30px;
+    }
+    
+    .welcome-title {
+        font-size: 2rem;
+    }
+    
+    .button-group {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+        max-width: 200px;
+    }
+}
+
+#game-grid {
+    display: grid;
+    grid-template-columns: repeat(11, 40px);
+    grid-template-rows: repeat(11, 40px);
+    gap: 2px;
+    margin: 20px auto;
+    width: 420px;
+}
+
+.tile {
+    width: 40px;
+    height: 40px;
+    background-color: rgb(0, 200, 13);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wall {
+    background-color: #350000;
+}
+
+.block {
+    background-color: #937800;
+}
+
+.player {
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+}
+
+.player.p1 {
+    background-color: blue;
+}
+
+.player.p2 {
+    background-color: red;
+}
+
+.player.p3 {
+    background-color: green;
+}
+
+.player.p4 {
+    background-color: yellow;
+}
+
+.bomb {
+    width: 30px;
+    height: 30px;
+    background-color: rgb(0, 0, 0);
+    border-radius: 50%;
+}
+
+.explosion {
+    background-color: orange;
+}
+
+#start-div {
+    background-color: #2f2424aa;
+    min-width: 300px;
+    min-height: 150px;
+    padding: 20px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#start-div p {
+    font-weight: bold;
+    font-size: 20px;
+    color: #000000;
+    margin: 0;
+}
+
+#name-error {
+    font-weight: bold;
+    color: red;
+    margin: 0;
+}
+
+#start-div input {
+    color: #000000;
+    background-color: #6f4444b3;
+    border-radius: 5px;
+    border: 1px solid #000000;
+    padding: 5px;
+}
+
+#start-div input::placeholder {
+    color: #0000009c;
+}
+
+#start-div input:focus {
+    outline: none;
+}
+
+#start-div button {
+    font-size: 24px;
+    background-color: #880000;
+    color: #000000;
+    border: 2px solid #000000;
+    padding: 5px 10px;
+    border-radius: 10px;
+    margin: 30px 0;
+}
+
+#start-div button:hover {
+    background-color: #ff0000;
+}
