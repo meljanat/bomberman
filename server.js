@@ -72,6 +72,8 @@ const positions = [
     { x: 9, y: 1 },
 ];
 
+const powers = {"speed" : 1, "flames":1,"bombs" : 1};
+
 // Store player WebSocket connections
 let playerConnections = new Map();
 
@@ -154,6 +156,8 @@ function handlePlayerJoin(ws, name) {
         y: playerPosition.y,
         lives: 3,
         name: name,
+        powers : powers,
+        bombs : 0
     };
 
     players.push(player);
@@ -252,15 +256,15 @@ function handlePlayerMove(player, direction) {
     let newX = player.x;
     let newY = player.y;
 
-    if (direction === 'up' && checkTile(newX, newY - 1)) newY -= 1;
-    else if (direction === 'down' && checkTile(newX, newY + 1)) newY += 1;
-    else if (direction === 'left' && checkTile(newX - 1, newY)) newX -= 1;
-    else if (direction === 'right' && checkTile(newX + 1, newY)) newX += 1;
+    if (direction === 'up' && checkTile(newX, newY - 1)) newY -= player.powers.speed;
+    else if (direction === 'down' && checkTile(newX, newY + 1)) newY += player.powers.speed;
+    else if (direction === 'left' && checkTile(newX - 1, newY)) newX -= player.powers.speed;
+    else if (direction === 'right' && checkTile(newX + 1, newY)) newX += player.powers.speed;
 
     if (newX !== player.x || newY !== player.y) {
         player.x = newX;
         player.y = newY;
-        broadcast(JSON.stringify({ type: 'playerMoved', players }));
+        broadcast(JSON.stringify({ type: 'playerMoved', players ,powers}));
     }
 }
 
@@ -278,7 +282,7 @@ function checkTile(x, y) {
 function handlePlaceBomb(player) {
     // Check if player already has a bomb at this position
     const existingBomb = bombs.find(bomb => bomb.x === player.x && bomb.y === player.y);
-    if (existingBomb) return;
+    if (existingBomb || player.bombs >= player.powers.bombs) return;
 
     const bomb = {
         x: player.x,
@@ -288,6 +292,8 @@ function handlePlaceBomb(player) {
     };
 
     bombs.push(bomb);
+    player.bombs++
+    
     broadcast(JSON.stringify({ type: 'bombPlaced', bombs }));
 
     setTimeout(() => {
@@ -306,7 +312,7 @@ function explodeBomb(bomb) {
 
     // Add cross-shaped explosion (up, down, left, right)
     const directions = [
-        { dx: 0, dy: -1 }, // up
+        { dx: 0, dy: -1*pla }, // up
         { dx: 0, dy: 1 },  // down
         { dx: -1, dy: 0 }, // left
         { dx: 1, dy: 0 }   // right
