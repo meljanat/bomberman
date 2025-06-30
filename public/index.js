@@ -48,7 +48,7 @@ const reducers = {
 
     connectToServer: (state) => {
         console.log('Attempting to connect to server...');
-        
+
         if (socket && socket.readyState === WebSocket.OPEN) {
             console.log('Already connected');
             return { ...state, connected: true };
@@ -118,7 +118,7 @@ const reducers = {
 
     startGame: (state) => {
         console.log('Starting game with name:', state.playerName);
-        
+
         if (!state.playerName.trim()) {
             return {
                 ...state,
@@ -285,9 +285,9 @@ function removeKeyboardControls() {
 // View functions
 function renderMenu(state, emit) {
     const canJoin = state.playerName.trim() && state.connected && !state.connecting;
-    const buttonText = state.connecting ? 'Connecting...' : 
-                      !state.connected ? 'Connecting...' : 
-                      'Join Game';
+    const buttonText = state.connecting ? 'Connecting...' :
+        !state.connected ? 'Connecting...' :
+            'Join Game';
 
     return CreateElement('div', { class: 'menu-container' }, [
         CreateElement('div', { class: 'player-image' }, [
@@ -364,6 +364,18 @@ function renderWaiting(state, emit) {
                         click: () => emit('resetGame')
                     }
                 }, ['Back to Menu'])
+            ]),
+            CreateElement('div', { class: 'chat_global' }, [
+                CreateElement('input', {
+                    class: 'btn btn-secondary',
+                    placeholder: "Enter your message"
+                }, []),
+                CreateElement('button', {
+                    class: 'btn btn-secondary',
+                    on: {
+                        click: () => emit('submit_msg')
+                    }
+                }, ['Send'])
             ])
         ])
     ]);
