@@ -226,8 +226,14 @@ const reducers = {
 
     resetGame: (state) => ({
         ...initialState,
-        connected: state.connected
-    })
+        connected: state.connected,
+    }),
+    leaveGame: (state) => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'leaveGame' }));
+        }
+        return state
+    }
 };
 
 // Keyboard handling
@@ -375,7 +381,7 @@ function renderGameTile(state, i, j) {
     const children = [];
 
     state.players.forEach(player => {
-        if (player.alive && player.x === j && player.y === i) {
+        if (player.lives > 0 && player.x === j && player.y === i) {
             children.push(CreateElement('div', {
                 class: `player p${player.id}`
             }));
@@ -406,7 +412,7 @@ function renderGame(state, emit) {
     return CreateElement('div', { class: 'game-container' }, [
         CreateElement('div', { class: 'game-info' }, [
             CreateElement('h2', {}, ['Bomberman Game']),
-            CreateElement('p', {}, [`Players: ${state.players.filter(p => p.alive).length}`])
+            CreateElement('p', {}, [`Players: ${state.players.filter(p => p.lives > 0).length}`])
         ]),
 
         CreateElement('div', { class: 'game-grid' }, gridChildren),
@@ -421,6 +427,7 @@ function renderGame(state, emit) {
                     click: () => {
                         removeKeyboardControls();
                         emit('resetGame');
+                        emit('leaveGame');
                     }
                 }
             }, ['Leave Game'])
