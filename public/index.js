@@ -4,7 +4,7 @@ import { createApp } from './src/app.js'
 let socket = null;
 
 const initialState = {
-    screen: 'menu', // 'menu', 'waiting', 'game', 'gameOver'
+    screen: 'menu',
     playerName: '',
     errorMessage: '',
     statusMessage: '',
@@ -14,7 +14,9 @@ const initialState = {
     gridSize: 11,
     gameWinner: null,
     connected: false,
-    connecting: false
+    connecting: false,
+    messages: [],
+    showChat: false
 };
 
 const reducers = {
@@ -45,6 +47,25 @@ const reducers = {
         ...state,
         connecting: connecting
     }),
+    
+    toggleChat: (state) => ({
+        ...state,
+        showChat: !state.showChat
+    }),
+
+    submit_msg: (state, message) => {
+        if (socket && socket.readyState === WebSocket.OPEN && message.trim()) {
+            socket.send(JSON.stringify({ type: 'message', message: message.trim() }));
+        }
+        return state;
+    },
+
+    sendChatMessage: (state, message) => {
+        if (socket && socket.readyState === WebSocket.OPEN && message.trim()) {
+            socket.send(JSON.stringify({ type: 'message', message: message.trim() }));
+        }
+        return state;
+    },
 
     connectToServer: (state) => {
         console.log('Attempting to connect to server...');
@@ -60,7 +81,6 @@ const reducers = {
         }
 
         try {
-            // Use the correct port from server.js (8888)
             socket = new WebSocket('ws://localhost:8888');
 
             socket.addEventListener('open', () => {
@@ -113,7 +133,8 @@ const reducers = {
         connecting: false,
         screen: 'menu',
         errorMessage: 'Connection lost. Please try again.',
-        statusMessage: ''
+        statusMessage: '',
+        messages: []
     }),
 
     startGame: (state) => {
@@ -197,6 +218,18 @@ const reducers = {
                     bombs: data.bombs,
                     board: data.board
                 };
+                
+            case 'newMessage':
+                return {
+                    ...state,
+                    messages: [...(state.messages || []), data.message]
+                };
+
+            case 'messageHistory':
+                return {
+                    ...state,
+                    messages: data.messages || []
+                };
 
             case 'gameOver':
                 return {
@@ -227,7 +260,9 @@ const reducers = {
     resetGame: (state) => ({
         ...initialState,
         connected: state.connected,
+        messages: []
     }),
+    
     leaveGame: (state) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: 'leaveGame' }));
@@ -236,7 +271,6 @@ const reducers = {
     }
 };
 
-// Keyboard handling
 let keyHandler = null;
 
 function setupKeyboardControls(emit) {
@@ -264,6 +298,10 @@ function setupKeyboardControls(emit) {
                 event.preventDefault();
                 emit('placeBomb');
                 return;
+            case 'Enter':
+                event.preventDefault();
+                emit('toggleChat');
+                return;
         }
 
         if (direction) {
@@ -282,7 +320,68 @@ function removeKeyboardControls() {
     }
 }
 
-// View functions
+function renderChatMessages(messages) {
+    if (!messages || messages.length === 0) {
+        return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
+    }
+    
+    console.log(messages);
+    return CreateElement('div', { class: 'chat-messages' }, 
+        messages.map(msg => 
+            
+            CreateElement('div', { class: 'chat-message' }, [
+                CreateElement('span', { class: 'chat-sender' }, [`${msg.sender}: `]),
+                CreateElement('span', { class: 'chat-text' }, [msg.text])
+            ])
+        )
+    );
+}
+
+function renderChat(state, emit) {
+    return CreateElement('div', { class: 'chat-container' }, [
+        CreateElement('div', { class: 'chat-header' }, [
+            CreateElement('h3', {}, ['Chat']),
+            CreateElement('button', {
+                class: 'chat-close',
+                on: { click: () => emit('toggleChat') }
+            }, ['×'])
+        ]),
+        renderChatMessages(state.messages),
+        CreateElement('div', { class: 'chat-input-container' }, [
+            CreateElement('input', {
+                type: 'text',
+                placeholder: 'Type your message...',
+                maxlength: '100',
+                on: {
+                    keydown: (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const message = e.target.value.trim();
+                            if (message) {
+                                emit('sendChatMessage', message);
+                                e.target.value = '';
+                            }
+                        }
+                    }
+                }
+            }),
+            CreateElement('button', {
+                class: 'chat-send-btn',
+                on: {
+                    click: (e) => {
+                        const input = e.target.parentElement.querySelector('input');
+                        const message = input.value.trim();
+                        if (message) {
+                            emit('sendChatMessage', message);
+                            input.value = '';
+                        }
+                    }
+                }
+            }, ['Send'])
+        ])
+    ]);
+}
+
 function renderMenu(state, emit) {
     const canJoin = state.playerName.trim() && state.connected && !state.connecting;
     const buttonText = state.connecting ? 'Connecting...' :
@@ -365,18 +464,43 @@ function renderWaiting(state, emit) {
                     }
                 }, ['Back to Menu'])
             ]),
-            CreateElement('div', { class: 'chat_global' }, [
+            
+            renderChatMessages(state.messages),
+            
+            CreateElement('div', { class: 'chat-input-container' }, [
                 CreateElement('input', {
-                    class: 'btn btn-secondary',
-                    placeholder: "Enter your message"
-                }, []),
-                CreateElement('button', {
-                    class: 'btn btn-secondary',
+                    type: 'text',
+                    placeholder: 'Type your message here...',
+                    maxlength: '100',
                     on: {
-                        click: () => emit('submit_msg')
+                        keydown: (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const message = e.target.value.trim();
+                                if (message) {
+                                    emit('submit_msg', message);
+                                    e.target.value = '';
+                                }
+                            }
+                        }
+                    }
+                }),
+                CreateElement('button', {
+                    class: 'chat-send-btn',
+                    on: {
+                        click: (e) => {
+                            const input = e.target.parentElement.querySelector('input');
+                            const message = input.value.trim();
+                            if (message) {
+                                emit('submit_msg', message);
+                                input.value = '';
+                            }
+                        }
                     }
                 }, ['Send'])
-            ])
+            ]),
+
+            CreateElement('div', { class: 'chat-status' }, ['Connected • Ready to chat'])
         ])
     ]);
 }
@@ -424,7 +548,11 @@ function renderGame(state, emit) {
     return CreateElement('div', { class: 'game-container' }, [
         CreateElement('div', { class: 'game-info' }, [
             CreateElement('h2', {}, ['Bomberman Game']),
-            CreateElement('p', {}, [`Players: ${state.players.filter(p => p.lives > 0).length}`])
+            CreateElement('p', {}, [`Players: ${state.players.filter(p => p.lives > 0).length}`]),
+            CreateElement('button', {
+                class: 'btn btn-chat',
+                on: { click: () => emit('toggleChat') }
+            }, ['Chat'])
         ]),
 
         CreateElement('div', { class: 'game-grid' }, gridChildren),
@@ -432,6 +560,7 @@ function renderGame(state, emit) {
         CreateElement('div', { class: 'controls' }, [
             CreateElement('p', {}, ['Use arrow keys to move']),
             CreateElement('p', {}, ['Press SPACE to place a bomb']),
+            CreateElement('p', {}, ['Press ENTER to toggle chat']),
             CreateElement('button', {
                 class: 'btn btn-secondary',
                 style: { marginTop: '10px' },
@@ -443,7 +572,9 @@ function renderGame(state, emit) {
                     }
                 }
             }, ['Leave Game'])
-        ])
+        ]),
+
+        state.showChat ? renderChat(state, emit) : null
     ]);
 }
 

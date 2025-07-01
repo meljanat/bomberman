@@ -51,6 +51,7 @@ const wss = new WebSocket.Server({ server });
 let players = [];
 let bombs = [];
 let gridSize = 11;
+let messages = []
 let board = [
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
     [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
@@ -72,7 +73,7 @@ const positions = [
     { x: 9, y: 1 },
 ];
 
-const powers = {"speed" : 1, "flames":1,"bombs" : 1};
+const powers = { "speed": 1, "flames": 1, "bombs": 1 };
 
 // Store player WebSocket connections
 let playerConnections = new Map();
@@ -104,9 +105,14 @@ wss.on('connection', (ws) => {
                     console.log(playerConnections);
 
                     players = players.filter(a => a.id != player.id)
-                    
+
                     console.log(player.name, "----++++++");
 
+                }
+            } else if (data.type === 'message') {
+                const player = getPlayerByWebSocket(ws);
+                if (player) {
+                    handleChatMessage(player, data.message);
                 }
             }
         } catch (error) {
@@ -132,6 +138,37 @@ wss.on('connection', (ws) => {
     });
 });
 
+function handleChatMessage(player, messageText) {
+    if (!messageText || typeof messageText !== 'string') {
+        return;
+    }
+
+    messageText = messageText.trim();
+    if (messageText.length === 0 || messageText.length > 100) {
+        return;
+    }
+
+    const message = {
+        id: Date.now(),
+        playerId: player.id,
+        sender: player.name,
+        text: messageText,
+        timestamp: Date.now()
+    };
+
+    messages.push(message);
+    if (messages.length > 20) {
+        messages.shift();
+    }
+
+    broadcast(JSON.stringify({
+        type: 'newMessage',
+        message: message,
+        messages: messages,
+        sender : player.name
+    }));
+}
+
 function handlePlayerJoin(ws, name) {
     // Check if room is full
     if (players.length >= 4) {
@@ -156,8 +193,8 @@ function handlePlayerJoin(ws, name) {
         y: playerPosition.y,
         lives: 3,
         name: name,
-        powers : powers,
-        bombs : 0
+        powers: powers,
+        bombs: 0
     };
 
     players.push(player);
@@ -185,6 +222,12 @@ function handlePlayerJoin(ws, name) {
             type: 'waiting',
             message: `Currently in room: ${players.length}/4. Waiting for more players...`
         }), player.id);
+    }
+    if (messages.length > 0) {
+        playerConnections.get(playerId).send(JSON.stringify({
+            type: 'messageHistory',
+            messages: messages
+        }));
     }
 }
 
@@ -264,7 +307,7 @@ function handlePlayerMove(player, direction) {
     if (newX !== player.x || newY !== player.y) {
         player.x = newX;
         player.y = newY;
-        broadcast(JSON.stringify({ type: 'playerMoved', players ,powers}));
+        broadcast(JSON.stringify({ type: 'playerMoved', players, powers }));
     }
 }
 
@@ -293,7 +336,7 @@ function handlePlaceBomb(player) {
 
     bombs.push(bomb);
     player.bombs++
-    
+
     broadcast(JSON.stringify({ type: 'bombPlaced', bombs }));
 
     setTimeout(() => {
@@ -312,7 +355,7 @@ function explodeBomb(bomb) {
 
     // Add cross-shaped explosion (up, down, left, right)
     const directions = [
-        { dx: 0, dy: -1*pla }, // up
+        { dx: 0, dy: -1 }, // up
         { dx: 0, dy: 1 },  // down
         { dx: -1, dy: 0 }, // left
         { dx: 1, dy: 0 }   // right
@@ -377,17 +420,10 @@ function checkGameOver() {
     }
 }
 
-function Delete(array, id) {
-    let a = []
-    for (aa of array) {
-        if (aa != id) a.push(aa)
-    } 
-    return a 
-}
-
 function resetGame() {
     players = [];
     bombs = [];
+    messages = []
     playerConnections.clear();
 
     // Reset board
