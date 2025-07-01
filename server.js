@@ -105,8 +105,10 @@ wss.on('connection', (ws) => {
                 if (player) {
                     playerConnections.delete(player.id)
                     // console.log(playerConnections);
-
                     players = players.filter(a => a.id != player.id)
+                    if (players.length <2) {
+                        checkGameOver();
+                    }
 
                     // console.log(player.name, "----++++++");
 
@@ -118,7 +120,7 @@ wss.on('connection', (ws) => {
                 }
             }
         } catch (error) {
-            // console.error('Error parsing message:', error);
+            console.error('Error parsing message:', error);
         }
     });
 
