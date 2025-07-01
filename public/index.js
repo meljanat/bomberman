@@ -20,6 +20,8 @@ const initialState = {
     gameWinner: null,
     connected: false,
     connecting: false,
+    messages: [],
+    showChat: false,
     countdown: 0,
     isCountingDown: false,
     explosions: [],
@@ -87,10 +89,29 @@ const reducers = {
         ...state,
         fps: fps
     }),
+    
+    toggleChat: (state) => ({
+        ...state,
+        showChat: !state.showChat
+    }),
+
+    submit_msg: (state, message) => {
+        if (socket && socket.readyState === WebSocket.OPEN && message.trim()) {
+            socket.send(JSON.stringify({ type: 'message', message: message.trim() }));
+        }
+        return state;
+    },
+
+    sendChatMessage: (state, message) => {
+        if (socket && socket.readyState === WebSocket.OPEN && message.trim()) {
+            socket.send(JSON.stringify({ type: 'message', message: message.trim() }));
+        }
+        return state;
+    },
 
     connectToServer: (state) => {
         console.log('Attempting to connect to server...');
-        
+
         if (socket && socket.readyState === WebSocket.OPEN) {
             console.log('Already connected');
             return { ...state, connected: true };
@@ -155,12 +176,13 @@ const reducers = {
         screen: 'menu',
         errorMessage: 'Connection lost. Please try again.',
         statusMessage: '',
-        currentPlayer: null
+        currentPlayer: null,
+        messages: []
     }),
 
     startGame: (state) => {
         console.log('Starting game with name:', state.playerName);
-        
+
         if (!state.playerName.trim()) {
             return {
                 ...state,
@@ -292,6 +314,30 @@ const reducers = {
                     powerUps: data.powerUps,
                     currentPlayer: data.players.find(p => p.name === state.playerName)
                 };
+                
+            case 'newMessage':
+                return {
+                    ...state,
+                    messages: [...(state.messages || []), data.message]
+                };
+
+            case 'messageHistory':
+                return {
+                    ...state,
+                    messages: data.messages || []
+                };
+                
+            case 'newMessage':
+                return {
+                    ...state,
+                    messages: [...(state.messages || []), data.message]
+                };
+
+            case 'messageHistory':
+                return {
+                    ...state,
+                    messages: data.messages || []
+                };
 
             case 'gameOver':
                 return {
@@ -345,11 +391,18 @@ const reducers = {
 
     resetGame: (state) => ({
         ...initialState,
-        connected: state.connected
-    })
+        connected: state.connected,
+        messages: []
+    }),
+    
+    leaveGame: (state) => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'leaveGame' }));
+        }
+        return state
+    }
 };
 
-// Keyboard handling
 let keyHandler = null;
 let keysPressed = new Set();
 
@@ -390,6 +443,10 @@ function setupKeyboardControls(emit) {
             case 'Enter':
                 event.preventDefault();
                 emit('placeBomb');
+                return;
+            case 'Enter':
+                event.preventDefault();
+                emit('toggleChat');
                 return;
             case 'c':
             case 'C':
@@ -453,12 +510,73 @@ function stopGameLoop() {
     }
 }
 
-// View functions
+function renderChatMessages(messages) {
+    if (!messages || messages.length === 0) {
+        return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
+    }
+    
+    console.log(messages);
+    return CreateElement('div', { class: 'chat-messages' }, 
+        messages.map(msg => 
+            
+            CreateElement('div', { class: 'chat-message' }, [
+                CreateElement('span', { class: 'chat-sender' }, [`${msg.sender}: `]),
+                CreateElement('span', { class: 'chat-text' }, [msg.text])
+            ])
+        )
+    );
+}
+
+function renderChat(state, emit) {
+    return CreateElement('div', { class: 'chat-container' }, [
+        CreateElement('div', { class: 'chat-header' }, [
+            CreateElement('h3', {}, ['Chat']),
+            CreateElement('button', {
+                class: 'chat-close',
+                on: { click: () => emit('toggleChat') }
+            }, ['×'])
+        ]),
+        renderChatMessages(state.messages),
+        CreateElement('div', { class: 'chat-input-container' }, [
+            CreateElement('input', {
+                type: 'text',
+                placeholder: 'Type your message...',
+                maxlength: '100',
+                on: {
+                    keydown: (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const message = e.target.value.trim();
+                            if (message) {
+                                emit('sendChatMessage', message);
+                                e.target.value = '';
+                            }
+                        }
+                    }
+                }
+            }),
+            CreateElement('button', {
+                class: 'chat-send-btn',
+                on: {
+                    click: (e) => {
+                        const input = e.target.parentElement.querySelector('input');
+                        const message = input.value.trim();
+                        if (message) {
+                            emit('sendChatMessage', message);
+                            input.value = '';
+                        }
+                    }
+                }
+            }, ['Send'])
+        ])
+    ]);
+}
+
 function renderMenu(state, emit) {
     const canJoin = state.playerName.trim() && state.connected && !state.connecting;
-    const buttonText = state.connecting ? 'Connecting...' : 
-                      !state.connected ? 'Connecting...' : 
-                      'Join Game';
+    const buttonText = state.connecting ? 'Connecting...' :
+        !state.connected ? 'Connecting...' :
+            'Join Game';
 
     return CreateElement('div', { class: 'menu-container' }, [
         CreateElement('div', { class: 'player-image' }, [
@@ -544,7 +662,44 @@ function renderWaiting(state, emit) {
                         click: () => emit('resetGame')
                     }
                 }, ['Back to Menu'])
-            ])
+            ]),
+            
+            renderChatMessages(state.messages),
+            
+            CreateElement('div', { class: 'chat-input-container' }, [
+                CreateElement('input', {
+                    type: 'text',
+                    placeholder: 'Type your message here...',
+                    maxlength: '100',
+                    on: {
+                        keydown: (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const message = e.target.value.trim();
+                                if (message) {
+                                    emit('submit_msg', message);
+                                    e.target.value = '';
+                                }
+                            }
+                        }
+                    }
+                }),
+                CreateElement('button', {
+                    class: 'chat-send-btn',
+                    on: {
+                        click: (e) => {
+                            const input = e.target.parentElement.querySelector('input');
+                            const message = input.value.trim();
+                            if (message) {
+                                emit('submit_msg', message);
+                                input.value = '';
+                            }
+                        }
+                    }
+                }, ['Send'])
+            ]),
+
+            CreateElement('div', { class: 'chat-status' }, ['Connected • Ready to chat'])
         ])
     ]);
 }
@@ -594,7 +749,7 @@ function renderGameTile(state, i, j) {
 
     // Add players
     state.players.forEach(player => {
-        if (player.alive && player.x === j && player.y === i) {
+        if (player.lives > 0 && player.x === j && player.y === i) {
             children.push(CreateElement('div', {
                 class: `player player-${player.id}${player.name === state.playerName ? ' current-player' : ''}`,
                 title: player.name
