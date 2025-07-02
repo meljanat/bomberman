@@ -635,7 +635,10 @@ function renderWaiting(state, emit) {
                 CreateElement('button', {
                     class: 'btn btn-secondary',
                     on: {
-                        click: () => emit('resetGame')
+                        click: () => {
+                            emit('resetGame'),
+                            emit('leaveGame')
+                        },
                     }
                 }, ['Back to Menu'])
             ]),
