@@ -25,9 +25,7 @@ const initialState = {
     countdown: 0,
     isCountingDown: false,
     explosions: [],
-    chatMessages: [],
     chatInput: '',
-    showChat: false,
     currentPlayer: null,
     fps: 0
 };
@@ -49,11 +47,12 @@ const reducers = {
         showChat: !state.showChat
     }),
 
-    sendChatMessage: (state) => {
-        if (socket && socket.readyState === WebSocket.OPEN && state.chatInput.trim()) {
-            socket.send(JSON.stringify({ 
-                type: 'chat', 
-                message: state.chatInput.trim() 
+    sendChatMessage: (state, message) => {
+        const messageToSend = message || state.chatInput;
+        if (socket && socket.readyState === WebSocket.OPEN && messageToSend.trim()) {
+            socket.send(JSON.stringify({
+                type: 'message',
+                message: messageToSend.trim()
             }));
             return {
                 ...state,
@@ -89,25 +88,6 @@ const reducers = {
         ...state,
         fps: fps
     }),
-    
-    toggleChat: (state) => ({
-        ...state,
-        showChat: !state.showChat
-    }),
-
-    submit_msg: (state, message) => {
-        if (socket && socket.readyState === WebSocket.OPEN && message.trim()) {
-            socket.send(JSON.stringify({ type: 'message', message: message.trim() }));
-        }
-        return state;
-    },
-
-    sendChatMessage: (state, message) => {
-        if (socket && socket.readyState === WebSocket.OPEN && message.trim()) {
-            socket.send(JSON.stringify({ type: 'message', message: message.trim() }));
-        }
-        return state;
-    },
 
     connectToServer: (state) => {
         console.log('Attempting to connect to server...');
@@ -314,19 +294,7 @@ const reducers = {
                     powerUps: data.powerUps,
                     currentPlayer: data.players.find(p => p.name === state.playerName)
                 };
-                
-            case 'newMessage':
-                return {
-                    ...state,
-                    messages: [...(state.messages || []), data.message]
-                };
 
-            case 'messageHistory':
-                return {
-                    ...state,
-                    messages: data.messages || []
-                };
-                
             case 'newMessage':
                 return {
                     ...state,
@@ -353,16 +321,10 @@ const reducers = {
                     playerName: state.playerName
                 };
 
-            case 'chatMessage':
-                return {
-                    ...state,
-                    chatMessages: [...state.chatMessages, data.chatMessage]
-                };
-
             case 'chatHistory':
                 return {
                     ...state,
-                    chatMessages: data.messages
+                    messages: data.messages || []
                 };
 
             default:
@@ -394,18 +356,21 @@ const reducers = {
         connected: state.connected,
         messages: []
     }),
-    
+
     leaveGame: (state) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: 'leaveGame' }));
         }
-        return state
+        return state;
     }
 };
 
 let keyHandler = null;
 let keysPressed = new Set();
 
+const keyUpHandler = (event) => {
+    keysPressed.delete(event.key);
+};
 function setupKeyboardControls(emit) {
     if (keyHandler) {
         document.removeEventListener('keydown', keyHandler);
@@ -413,6 +378,11 @@ function setupKeyboardControls(emit) {
     }
 
     keyHandler = (event) => {
+        // Don't handle keys if chat input is focused
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+            return;
+        }
+
         if (keysPressed.has(event.key)) return; // Prevent key repeat
         keysPressed.add(event.key);
 
@@ -440,13 +410,8 @@ function setupKeyboardControls(emit) {
                 direction = 'right';
                 break;
             case ' ':
-            case 'Enter':
                 event.preventDefault();
                 emit('placeBomb');
-                return;
-            case 'Enter':
-                event.preventDefault();
-                emit('toggleChat');
                 return;
             case 'c':
             case 'C':
@@ -461,9 +426,6 @@ function setupKeyboardControls(emit) {
         }
     };
 
-    const keyUpHandler = (event) => {
-        keysPressed.delete(event.key);
-    };
 
     window.keyUpHandler = keyUpHandler;
     document.addEventListener('keydown', keyHandler);
@@ -497,7 +459,7 @@ function startGameLoop(emit) {
 
         animationId = requestAnimationFrame(gameLoop);
     }
-    
+
     if (!animationId) {
         animationId = requestAnimationFrame(gameLoop);
     }
@@ -514,11 +476,9 @@ function renderChatMessages(messages) {
     if (!messages || messages.length === 0) {
         return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
     }
-    
-    console.log(messages);
-    return CreateElement('div', { class: 'chat-messages' }, 
-        messages.map(msg => 
-            
+
+    return CreateElement('div', { class: 'chat-messages' },
+        messages.map(msg =>
             CreateElement('div', { class: 'chat-message' }, [
                 CreateElement('span', { class: 'chat-sender' }, [`${msg.sender}: `]),
                 CreateElement('span', { class: 'chat-text' }, [msg.text])
@@ -528,6 +488,8 @@ function renderChatMessages(messages) {
 }
 
 function renderChat(state, emit) {
+    if (!state.showChat) return null;
+
     return CreateElement('div', { class: 'chat-container' }, [
         CreateElement('div', { class: 'chat-header' }, [
             CreateElement('h3', {}, ['Chat']),
@@ -542,14 +504,15 @@ function renderChat(state, emit) {
                 type: 'text',
                 placeholder: 'Type your message...',
                 maxlength: '100',
+                value: state.chatInput,
                 on: {
+                    input: (e) => emit('updateChatInput', e.target.value),
                     keydown: (e) => {
                         if (e.key === 'Enter') {
                             e.preventDefault();
                             const message = e.target.value.trim();
                             if (message) {
                                 emit('sendChatMessage', message);
-                                e.target.value = '';
                             }
                         }
                     }
@@ -558,12 +521,10 @@ function renderChat(state, emit) {
             CreateElement('button', {
                 class: 'chat-send-btn',
                 on: {
-                    click: (e) => {
-                        const input = e.target.parentElement.querySelector('input');
-                        const message = input.value.trim();
+                    click: () => {
+                        const message = state.chatInput.trim();
                         if (message) {
                             emit('sendChatMessage', message);
-                            input.value = '';
                         }
                     }
                 }
@@ -646,7 +607,7 @@ function renderWaiting(state, emit) {
             CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
             CreateElement('div', { class: 'players-list' }, [
                 CreateElement('h3', {}, ['Players in lobby:']),
-                ...state.players.map(player => 
+                ...state.players.map(player =>
                     CreateElement('div', { class: 'player-item' }, [
                         `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
                     ])
@@ -663,9 +624,9 @@ function renderWaiting(state, emit) {
                     }
                 }, ['Back to Menu'])
             ]),
-            
+
             renderChatMessages(state.messages),
-            
+
             CreateElement('div', { class: 'chat-input-container' }, [
                 CreateElement('input', {
                     type: 'text',
@@ -677,7 +638,7 @@ function renderWaiting(state, emit) {
                                 e.preventDefault();
                                 const message = e.target.value.trim();
                                 if (message) {
-                                    emit('submit_msg', message);
+                                    emit('sendChatMessage', message);
                                     e.target.value = '';
                                 }
                             }
@@ -691,7 +652,7 @@ function renderWaiting(state, emit) {
                             const input = e.target.parentElement.querySelector('input');
                             const message = input.value.trim();
                             if (message) {
-                                emit('submit_msg', message);
+                                emit('sendChatMessage', message);
                                 input.value = '';
                             }
                         }
@@ -714,7 +675,7 @@ function renderCountdown(state, emit) {
             ]),
             CreateElement('div', { class: 'players-list' }, [
                 CreateElement('h3', {}, ['Players:']),
-                ...state.players.map(player => 
+                ...state.players.map(player =>
                     CreateElement('div', { class: 'player-item' }, [
                         `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
                     ])
@@ -727,7 +688,7 @@ function renderCountdown(state, emit) {
 function renderGameTile(state, i, j) {
     const cellValue = state.board[i] ? state.board[i][j] : 0;
     let tileClass = 'tile';
-    
+
     if (cellValue === 2) tileClass += ' wall';
     else if (cellValue === 1) tileClass += ' block';
 
@@ -797,49 +758,6 @@ function renderPlayerStats(state) {
     ]);
 }
 
-function renderChat(state, emit) {
-    if (!state.showChat) return null;
-
-    return CreateElement('div', { class: 'chat-container' }, [
-        CreateElement('div', { class: 'chat-header' }, [
-            CreateElement('h4', {}, ['Chat']),
-            CreateElement('button', {
-                class: 'chat-close',
-                on: { click: () => emit('toggleChat') }
-            }, ['×'])
-        ]),
-        CreateElement('div', { class: 'chat-messages' }, [
-            ...state.chatMessages.map(msg => 
-                CreateElement('div', { class: 'chat-message' }, [
-                    CreateElement('span', { class: 'chat-sender' }, [`${msg.playerName}: `]),
-                    CreateElement('span', { class: 'chat-text' }, [msg.message])
-                ])
-            )
-        ]),
-        CreateElement('div', { class: 'chat-input-container' }, [
-            CreateElement('input', {
-                type: 'text',
-                class: 'chat-input',
-                placeholder: 'Type a message...',
-                value: state.chatInput,
-                on: {
-                    input: (e) => emit('updateChatInput', e.target.value),
-                    keydown: (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            emit('sendChatMessage');
-                        }
-                    }
-                }
-            }),
-            CreateElement('button', {
-                class: 'chat-send',
-                on: { click: () => emit('sendChatMessage') }
-            }, ['Send'])
-        ])
-    ]);
-}
-
 function renderGame(state, emit) {
     setupKeyboardControls(emit);
     startGameLoop(emit);
@@ -878,17 +796,17 @@ function renderGame(state, emit) {
 
         CreateElement('div', { class: 'game-main' }, [
             CreateElement('div', { class: 'game-grid' }, gridChildren),
-            
+
             CreateElement('div', { class: 'game-sidebar' }, [
                 renderPlayerStats(state),
-                
+
                 CreateElement('div', { class: 'other-players' }, [
                     CreateElement('h4', {}, ['Other Players']),
                     ...state.players
                         .filter(p => p.name !== state.playerName)
-                        .map(player => 
-                            CreateElement('div', { 
-                                class: `other-player ${!player.alive ? 'dead' : ''}` 
+                        .map(player =>
+                            CreateElement('div', {
+                                class: `other-player ${!player.alive ? 'dead' : ''}`
                             }, [
                                 CreateElement('span', { class: 'player-name' }, [player.name]),
                                 CreateElement('span', { class: 'player-lives' }, [`❤️ ${player.lives}`])
@@ -899,7 +817,7 @@ function renderGame(state, emit) {
                 CreateElement('div', { class: 'controls-help' }, [
                     CreateElement('h4', {}, ['Controls']),
                     CreateElement('p', {}, ['Arrow Keys / WASD: Move']),
-                    CreateElement('p', {}, ['Space / Enter: Place Bomb']),
+                    CreateElement('p', {}, ['Space: Place Bomb']),
                     CreateElement('p', {}, ['C: Toggle Chat'])
                 ])
             ])
@@ -920,20 +838,20 @@ function renderGameOver(state, emit) {
         CreateElement('div', { class: 'menu-form' }, [
             CreateElement('h1', { class: 'welcome-title' }, ['🎮 Game Over!']),
             CreateElement('div', { class: 'winner-announcement' }, [
-                CreateElement('h2', { 
-                    class: isWinner ? 'winner-text' : 'loser-text' 
+                CreateElement('h2', {
+                    class: isWinner ? 'winner-text' : 'loser-text'
                 }, [
                     isWinner ? '🎉 You Won! 🎉' : `Winner: ${winnerName}`
                 ]),
-                isWinner ? 
+                isWinner ?
                     CreateElement('p', { class: 'winner-message' }, ['Congratulations! You are the last player standing!']) :
                     CreateElement('p', { class: 'loser-message' }, ['Better luck next time!'])
             ]),
             CreateElement('div', { class: 'final-stats' }, [
                 CreateElement('h3', {}, ['Final Results']),
-                ...state.players.map(player => 
-                    CreateElement('div', { 
-                        class: `final-player ${player.alive ? 'winner' : 'eliminated'}` 
+                ...state.players.map(player =>
+                    CreateElement('div', {
+                        class: `final-player ${player.alive ? 'winner' : 'eliminated'}`
                     }, [
                         `${player.alive ? '👑' : '💀'} ${player.name} - ${player.alive ? 'Winner' : 'Eliminated'} (Lives: ${player.lives})`
                     ])

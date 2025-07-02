@@ -58,7 +58,7 @@ let gameStartTimer = null;
 let countdownTimer = null;
 let countdownSeconds = 10;
 
-let messages = []
+let messages = [];
 let board = [
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
     [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
@@ -80,9 +80,7 @@ const positions = [
     { x: 9, y: 1 },
 ];
 
-let gameStarted = false ;
-
-const powers = { "speed": 1, "flames": 1, "bombs": 1 };
+let gameStarted = false;
 
 // Store player WebSocket connections
 let playerConnections = new Map();
@@ -99,7 +97,7 @@ wss.on('connection', (ws) => {
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-            // console.log('Received message:', data);
+            console.log('Received message:', data);
 
             if (data.type === 'start') {
                 handlePlayerJoin(ws, data.name);
@@ -121,15 +119,11 @@ wss.on('connection', (ws) => {
             } else if (data.type === 'leaveGame') {
                 const player = getPlayerByWebSocket(ws);
                 if (player) {
-                    playerConnections.delete(player.id)
-                    // console.log(playerConnections);
-                    players = players.filter(a => a.id != player.id)
-                    if (players.length <2) {
+                    playerConnections.delete(player.id);
+                    players = players.filter(a => a.id != player.id);
+                    if (players.length < 2) {
                         checkGameOver();
                     }
-
-                    // console.log(player.name, "----++++++");
-
                 }
             } else if (data.type === 'message') {
                 const player = getPlayerByWebSocket(ws);
@@ -143,7 +137,7 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        // console.log('A player disconnected.');
+        console.log('A player disconnected.');
         let player = getPlayerByWebSocket(ws);
         if (player) {
             players = players.filter((p) => p.id !== player.id);
@@ -196,7 +190,7 @@ function handleChatMessage(player, messageText) {
         type: 'newMessage',
         message: message,
         messages: messages,
-        sender : player.name
+        sender: player.name
     }));
 }
 
@@ -224,8 +218,9 @@ function handlePlayerJoin(ws, name) {
         y: playerPosition.y,
         lives: 3,
         name: name,
-        lives: 3,
+        alive: true, // Fixed: added alive property
         bombCount: 1,     // How many bombs can be placed at once
+        bombs: 0,         // Fixed: current bombs placed
         flameSize: 1,     // Explosion range
         speed: 1,         // Movement speed multiplier
         powerUps: {
@@ -238,7 +233,7 @@ function handlePlayerJoin(ws, name) {
     players.push(player);
     playerConnections.set(playerId, ws);
 
-    // console.log(`Player ${name} joined. Total players: ${players.length}`);
+    console.log(`Player ${name} joined. Total players: ${players.length}`);
 
     // Add blocks on first player join
     if (players.length === 1) {
@@ -301,6 +296,7 @@ function startCountdown() {
 
 function startGame() {
     gameState = 'playing';
+    gameStarted = true; // Fixed: set gameStarted flag
     broadcast(JSON.stringify({ 
         type: 'gameStart',
         board, 
@@ -372,29 +368,8 @@ function checkName(name) {
     return [true, ''];
 }
 
-function handleChatMessage(player, message) {
-    if (!message || message.trim().length === 0) return;
-    
-    const chatMessage = {
-        id: Date.now(),
-        playerId: player.id,
-        playerName: player.name,
-        message: message.trim(),
-        timestamp: new Date().toISOString()
-    };
-    
-    chatMessages.push(chatMessage);
-    
-    // Keep only last 100 messages
-    if (chatMessages.length > 100) {
-        chatMessages = chatMessages.slice(-100);
-    }
-    
-    broadcast(JSON.stringify({ type: 'chatMessage', chatMessage }));
-}
-
 function broadcast(message, id) {
-    //console.log('Broadcasting:', message);
+    console.log('Broadcasting:', message);
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN && (!id || playerConnections.get(id) == client)) {
             client.send(message);
@@ -418,7 +393,7 @@ function handlePlayerMove(player, direction) {
         // Check for power-up collection
         checkPowerUpCollection(player);
         
-        broadcast(JSON.stringify({ type: 'playerMoved', players, powers }));
+        broadcast(JSON.stringify({ type: 'playerMoved', players }));
     }
 }
 
@@ -433,8 +408,6 @@ function checkTile(x, y, player) {
 
     // Check bombs (unless player has bomb pass)
     const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
-    if (hasBomb) return false;
-
     if (hasBomb && !player.powerUps.bombPass) return false;
     
     return true;
@@ -486,7 +459,7 @@ function handlePlaceBomb(player) {
 
     // Check if there's already a bomb at this position
     const existingBomb = bombs.find(bomb => bomb.x === player.x && bomb.y === player.y);
-    if (existingBomb || player.bombs >= player.powers.bombs) return;
+    if (existingBomb) return;
 
     const bomb = {
         x: player.x,
@@ -498,18 +471,13 @@ function handlePlaceBomb(player) {
     };
 
     bombs.push(bomb);
-    player.bombs++
 
     broadcast(JSON.stringify({ type: 'bombPlaced', bombs }));
 
     if (!bomb.detonator) {
         setTimeout(() => {
             explodeBomb(bomb, player);
-    }, 2000);
-    
-    setTimeout(() => {
-        player.bombs = 0;
-    }, 3000);
+        }, 2000);
     }
 }
 
@@ -527,10 +495,10 @@ function explodeBomb(bomb, player) {
 
     // Add cross-shaped explosion with flame size
     const directions = [
-        { dx: 0, dy: -player.powers.flames}, // up
-        { dx: 0, dy: player.powers.flames },  // down
-        { dx: -player.powers.flames, dy: 0 }, // left
-        { dx: player.powers.flames, dy: 0 }   // right
+        { dx: 0, dy: -1}, // up
+        { dx: 0, dy: 1 },  // down
+        { dx: -1, dy: 0 }, // left
+        { dx: 1, dy: 0 }   // right
     ];
 
     directions.forEach(dir => {
@@ -560,24 +528,24 @@ function explodeBomb(bomb, player) {
     });
 
     // Check which players are hit by explosion
-    players.forEach((player) => {
-        if (!player.alive) return;
+    players.forEach((hitPlayer) => {
+        if (!hitPlayer.alive) return;
         
         const hit = explosions.some(expl => 
-            player.x === expl.x && player.y === expl.y
+            hitPlayer.x === expl.x && hitPlayer.y === expl.y
         );
         
         if (hit) {
-            player.lives--;
-            if (player.lives <= 0) {
-                player.alive = false;
+            hitPlayer.lives--;
+            if (hitPlayer.lives <= 0) {
+                hitPlayer.alive = false;
                 // Drop power-up on death (bonus feature)
-                dropPowerUpOnDeath(player);
+                dropPowerUpOnDeath(hitPlayer);
             } else {
                 // Respawn player at starting position
-                const startPos = positions[players.indexOf(player) % positions.length];
-                player.x = startPos.x;
-                player.y = startPos.y;
+                const startPos = positions[players.indexOf(hitPlayer) % positions.length];
+                hitPlayer.x = startPos.x;
+                hitPlayer.y = startPos.y;
             }
         }
     });
@@ -627,7 +595,7 @@ function dropPowerUpOnDeath(player) {
 }
 
 function checkGameOver() {
-    const alivePlayers = players.filter(p => p.lives > 0);
+    const alivePlayers = players.filter(p => p.alive);
     if (alivePlayers.length <= 1) {
         gameState = 'ended';
         const winner = alivePlayers.length === 1 ? alivePlayers[0] : null;
@@ -648,6 +616,7 @@ function resetGame() {
     bombs = [];
     powerUps = [];
     gameState = 'waiting';
+    gameStarted = false; // Fixed: reset gameStarted flag
     playerConnections.clear();
     clearGameTimers();
     
@@ -673,4 +642,4 @@ function resetGame() {
 const PORT = 8888;
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
-}); resetGame
+});
