@@ -171,8 +171,7 @@ function handleChatMessage(player, messageText, ws) {
 
     messageText = messageText.trim();
     if (messageText.length === 0 || messageText.length > 20) {
-        console.log("kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk");
-            ws.send(JSON.stringify({ type: 'error', message: 'Invalid message lenght' }));
+        ws.send(JSON.stringify({ type: 'error', message: 'Invalid message lenght...' }));
         return;
     }
 
@@ -206,6 +205,7 @@ function handlePlayerJoin(ws, name) {
 
     // Validate name
     const nameValidation = checkName(name);
+    
     if (!nameValidation[0]) {
         ws.send(JSON.stringify({ type: 'error', message: nameValidation[1] }));
         return;

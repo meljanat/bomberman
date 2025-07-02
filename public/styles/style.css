@@ -110,6 +110,13 @@ body {
     margin-bottom: 20px;
     font-weight: 500;
     box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+    animation: fadeOut 3s forwards;
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; display: none; }
 }
 
 .status-message {

@@ -6,6 +6,7 @@ let animationId = null;
 let lastFrameTime = 0;
 let frameCount = 0;
 let fpsDisplay = 0;
+let check = false;
 
 const initialState = {
     screen: 'menu', // 'menu', 'waiting', 'countdown', 'game', 'gameOver'
@@ -190,6 +191,7 @@ const reducers = {
         console.log('Handling server message:', data);
         switch (data.type) {
             case 'error':
+                check = true;
                 return {
                     ...state,
                     errorMessage: data.message,
@@ -478,17 +480,17 @@ function renderChatMessages(state) {
     }
                 // state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
 
-    if (state.message.length > 20) {
-        console.log("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll");
+    // if (state.message.length > 20) {
+    //     console.log("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll");
         
-        // setTimeout(() => {
-        //     CreateElement('div', { class: 'chat-empty' }, ['Invalid message lenght']);
-        // }, 2000);
-        if (state.errorMessage) {
-            return CreateElement('div', { class: 'error-message' }, [state.errorMessage]);
-        }
-        return null;
-    }
+    //     // setTimeout(() => {
+    //     //     CreateElement('div', { class: 'chat-empty' }, ['Invalid message lenght']);
+    //     // }, 2000);
+    //     if (state.errorMessage) {
+    //         return CreateElement('div', { class: 'error-message' }, [state.errorMessage]);
+    //     }
+    //     return null;
+    // }
 
     return CreateElement('div', { class: 'chat-messages' },
         state.messages.map(msg =>
@@ -638,7 +640,9 @@ function renderWaiting(state, emit) {
                 }, ['Back to Menu'])
             ]),
 
+
             renderChatMessages(state),
+            state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
 
             CreateElement('div', { class: 'chat-input-container' }, [
                 CreateElement('input', {
