@@ -244,7 +244,10 @@ function handlePlayerJoin(ws, name) {
     }
 
     // Broadcast player joined
-    broadcast(JSON.stringify({ type: 'playerJoined', players }), player.id);
+    players.map(a => {
+        broadcast(JSON.stringify({ type: 'playerJoined', players }), a.id);
+    })
+    
 
     // Handle game start logic
     if (players.length >= 2) {

@@ -35,7 +35,8 @@ body {
 
 /* Menu screens (menu, waiting, countdown, gameOver) */
 .menu-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto;
     align-items: center;
     justify-content: center;
     min-height: calc(100vh - 40px);
