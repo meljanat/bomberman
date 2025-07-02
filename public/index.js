@@ -503,7 +503,7 @@ function renderChat(state, emit) {
             CreateElement('input', {
                 type: 'text',
                 placeholder: 'Type your message...',
-                maxlength: '100',
+                maxlength: '20',
                 value: state.chatInput,
                 on: {
                     input: (e) => emit('updateChatInput', e.target.value),
@@ -562,7 +562,7 @@ function renderMenu(state, emit) {
                     class: 'name-input',
                     placeholder: 'Enter your name...',
                     value: state.playerName,
-                    maxlength: '20',
+                    maxlength : '20',
                     on: {
                         input: (e) => emit('updatePlayerName', e.target.value),
                         keydown: (e) => {
@@ -631,7 +631,7 @@ function renderWaiting(state, emit) {
                 CreateElement('input', {
                     type: 'text',
                     placeholder: 'Type your message here...',
-                    maxlength: '100',
+                    maxlength: '20',
                     on: {
                         keydown: (e) => {
                             if (e.key === 'Enter') {
@@ -787,7 +787,7 @@ function renderGame(state, emit) {
                         click: () => {
                             removeKeyboardControls();
                             stopGameLoop();
-                            emit('resetGame');
+                            emit('leaveGame');
                         }
                     }
                 }, ['🚪 Leave'])
