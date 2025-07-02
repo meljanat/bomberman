@@ -478,7 +478,7 @@ function renderChatMessages(state) {
     }
                 // state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
 
-    if (state.message.length > 20) {
+    if (state.messages.length > 20) {
         console.log("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll");
         
         // setTimeout(() => {

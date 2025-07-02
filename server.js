@@ -177,11 +177,9 @@ function handleChatMessage(player, messageText, ws) {
     }
 
     const message = {
-        id: Date.now(),
         playerId: player.id,
         sender: player.name,
         text: messageText,
-        timestamp: Date.now()
     };
 
     messages.push(message);
@@ -230,11 +228,7 @@ function handlePlayerJoin(ws, name) {
         bombs: 0,         // Fixed: current bombs placed
         flameSize: 1,     // Explosion range
         speed: 1,         // Movement speed multiplier
-        powerUps: {
-            bombPass: false,
-            blockPass: false,
-            detonator: false
-        }
+        powerUps: {}
     };
 
     players.push(player);
@@ -461,17 +455,17 @@ function handlePlaceBomb(player) {
         x: player.x,
         y: player.y,
         playerId: player.id,
-        timestamp: Date.now(),
         flameSize: player.flameSize,
     };
 
     bombs.push(bomb);
+    // explodeBomb(bomb)
 
     broadcast(JSON.stringify({ type: 'bombPlaced', bombs }));
 
 }
 
-function explodeBomb(bomb, player) {
+function explodeBomb(bomb) {
     // Remove the bomb from the array
     const bombIndex = bombs.findIndex(b => b === bomb);
     if (bombIndex === -1) return; // Bomb already exploded
