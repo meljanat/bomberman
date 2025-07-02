@@ -111,11 +111,6 @@ wss.on('connection', (ws) => {
                 if (player && gameState === 'playing') {
                     handlePlaceBomb(player);
                 }
-            } else if (data.type === 'chat') {
-                const player = getPlayerByWebSocket(ws);
-                if (player) {
-                    handleChatMessage(player, data.message, ws);
-                }
             } else if (data.type === 'leaveGame') {
                 console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
 
@@ -130,9 +125,11 @@ wss.on('connection', (ws) => {
                     }
                 }
             } else if (data.type === 'message') {
+                console.log("fiiiiiiiiiiiiiiiiinnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
+                
                 const player = getPlayerByWebSocket(ws);
                 if (player) {
-                    handleChatMessage(player, data.message);
+                    handleChatMessage(player, data.message, ws);
                 }
             }
         } catch (error) {
@@ -175,8 +172,7 @@ function handleChatMessage(player, messageText, ws) {
     messageText = messageText.trim();
     if (messageText.length === 0 || messageText.length > 20) {
         console.log("kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk");
-        
-            ws.send(JSON.stringify({ type: 'error', message: 'HHHHHHHHHHHHHHHHHHHHHHH' }));
+            ws.send(JSON.stringify({ type: 'error', message: 'Invalid message lenght' }));
         return;
     }
 
@@ -248,7 +244,7 @@ function handlePlayerJoin(ws, name) {
     }
 
     // Broadcast player joined
-    broadcast(JSON.stringify({ type: 'playerJoined', players }));
+    broadcast(JSON.stringify({ type: 'playerJoined', players }), player.id);
 
     // Handle game start logic
     if (players.length >= 2) {

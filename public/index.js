@@ -472,13 +472,26 @@ function stopGameLoop() {
     }
 }
 
-function renderChatMessages(messages) {
-    if (!messages || messages.length === 0) {
+function renderChatMessages(state) {
+    if (!state.messages || state.messages.length === 0) {
         return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
+    }
+                // state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+
+    if (state.message.length > 20) {
+        console.log("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll");
+        
+        // setTimeout(() => {
+        //     CreateElement('div', { class: 'chat-empty' }, ['Invalid message lenght']);
+        // }, 2000);
+        if (state.errorMessage) {
+            return CreateElement('div', { class: 'error-message' }, [state.errorMessage]);
+        }
+        return null;
     }
 
     return CreateElement('div', { class: 'chat-messages' },
-        messages.map(msg =>
+        state.messages.map(msg =>
             CreateElement('div', { class: 'chat-message' }, [
                 CreateElement('span', { class: 'chat-sender' }, [`${msg.sender}: `]),
                 CreateElement('span', { class: 'chat-text' }, [msg.text])
@@ -562,7 +575,7 @@ function renderMenu(state, emit) {
                     class: 'name-input',
                     placeholder: 'Enter your name...',
                     value: state.playerName,
-                    maxlength : '20',
+                    maxlength: '20',
                     on: {
                         input: (e) => emit('updatePlayerName', e.target.value),
                         keydown: (e) => {
@@ -625,7 +638,7 @@ function renderWaiting(state, emit) {
                 }, ['Back to Menu'])
             ]),
 
-            renderChatMessages(state.messages),
+            renderChatMessages(state),
 
             CreateElement('div', { class: 'chat-input-container' }, [
                 CreateElement('input', {
