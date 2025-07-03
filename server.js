@@ -265,6 +265,8 @@ function handlePlayerJoin(ws, name) {
         }
     }
 
+    console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhkkkkkkkkkkkkkkkkkkkkkkkkkk");
+    
     // Send current game state
     ws.send(JSON.stringify({
         type: 'gameState',
