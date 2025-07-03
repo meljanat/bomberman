@@ -931,7 +931,7 @@ setTimeout(() => {
 }, 1000);
 
 // Handle page visibility changes
-document.addEventListener('visibilitychange', () => {
+document.addEventListener('visibilitychange', () => {q
     if (document.hidden) {
         stopGameLoop();
     } else if (window.appEmit) {
