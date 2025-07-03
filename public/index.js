@@ -193,7 +193,6 @@ const reducers = {
         console.log('Handling server message:', data);
         switch (data.type) {
             case 'error':
-                check = true;
                 return {
                     ...state,
                     errorMessage: data.message,
@@ -211,20 +210,16 @@ const reducers = {
                     errorMessage: ''
                 };
 
-                // Find current player
                 if (data.players) {
                     const currentPlayer = data.players.find(p => p.name === state.playerName);
                     newState.currentPlayer = currentPlayer;
                 }
 
-                // Handle different game states
                 if (data.state === 'waiting') {
                     newState.screen = 'waiting';
-                    newState.statusMessage = `Waiting for players... (${data.players.length}/4)`;
-                } else if (data.state === 'countdownroom') {
-                    newState.screen = 'countdownroom';
                     newState.isCountingDownRoom = true;
-                    newState.countdownroom = data.countdownroom || 20;
+                    newState.countdownroom = data.secondsroom || 20;
+                    newState.statusMessage = `Waiting for players... (${data.players.length}/4)`;
                 } else if (data.state === 'countdown') {
                     newState.screen = 'countdown';
                     newState.isCountingDownRoom = false;
@@ -242,6 +237,8 @@ const reducers = {
                     ...state,
                     players: data.players,
                     screen: 'waiting',
+                    isCountingDownRoom: true,
+                    countdownroom: data.secondsroom,
                     statusMessage: `Waiting for players... (${data.players.length}/4)`,
                     currentPlayer: data.players.find(p => p.name === state.playerName)
                 };
@@ -260,14 +257,15 @@ const reducers = {
                     countdown: data.seconds
                 };
 
-            case 'countdownroom':
+            case 'waiting':
                 return {
                     ...state,
-                    screen: 'countdownroom',
+                    screen: 'waiting',
                     isCountingDownRoom: true,
-                    countdownroom: data.seconds
+                    countdownroom: data.secondsroom || data.countdownroom || 20,
+                    statusMessage: `Waiting for players... (${state.players.length}/4)`
                 };
-            
+
             case 'gameStart':
                 return {
                     ...state,
@@ -395,12 +393,11 @@ function setupKeyboardControls(emit) {
     }
 
     keyHandler = (event) => {
-        // Don't handle keys if chat input is focused
         if (document.activeElement && document.activeElement.tagName === 'INPUT') {
             return;
         }
 
-        if (keysPressed.has(event.key)) return; // Prevent key repeat
+        if (keysPressed.has(event.key)) return;
         keysPressed.add(event.key);
 
         let direction = null;
@@ -494,12 +491,12 @@ function renderChatMessages(state) {
         return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
     }
     console.log("mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", state);
-    
-                // state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+
+    // state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
 
     // if (state.message.length > 20) {
     //     console.log("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll");
-        
+
     //     // setTimeout(() => {
     //     //     CreateElement('div', { class: 'chat-empty' }, ['Invalid message lenght']);
     //     // }, 2000);
@@ -628,10 +625,11 @@ function renderWaiting(state, emit) {
     return CreateElement('div', { class: 'menu-container' }, [
         CreateElement('div', { class: 'menu-form' }, [
             CreateElement('h1', { class: 'welcome-title' }, ['⏳ Waiting for Players...']),
-            !state.countdownroom?
             CreateElement('div', { class: 'countdown-display' }, [
-                CreateElement('div', { class: 'countdown-number' }, [state.countdownroom.toString()]),
-            ]):null,
+                CreateElement('div', { class: 'countdown-number' }, [
+                    (state.countdownroom || 20).toString()
+                ]),
+            ]),
             CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
             CreateElement('div', { class: 'players-list' }, [
                 CreateElement('h3', {}, ['Players in lobby:']),
@@ -650,7 +648,7 @@ function renderWaiting(state, emit) {
                     on: {
                         click: () => {
                             emit('resetGame'),
-                            emit('leaveGame')
+                                emit('leaveGame')
                         },
                     }
                 }, ['Back to Menu'])

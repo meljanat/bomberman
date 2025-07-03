@@ -259,6 +259,8 @@ function handlePlayerJoin(ws, name) {
         }
     }
 
+    console.log("mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmpppppppppppppppppppppppppppppp");
+
     ws.send(JSON.stringify({
         type: 'gameState',
         state: gameState,
@@ -271,19 +273,22 @@ function handlePlayerJoin(ws, name) {
 }
 
 function startCountdownRoom() {
-    gameState = 'countdownroom';
+    clearGameTimers();
+    gameState = 'waiting';
     countdownSecondsroom = 20;
 
     broadcast(JSON.stringify({
-        type: 'countdownroom',
-        seconds: countdownSecondsroom
+        type: 'waiting',
+        secondsroom: countdownSecondsroom,
+        countdownroom: countdownSecondsroom,
     }));
 
     countdownTimerroom = setInterval(() => {
         countdownSecondsroom--;
         broadcast(JSON.stringify({
-            type: 'countdownroom',
-            seconds: countdownSecondsroom
+            type: 'waiting',
+            secondsroom: countdownSecondsroom,
+            countdownroom: countdownSecondsroom,
         }));
 
         if (countdownSecondsroom <= 0) {
