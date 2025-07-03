@@ -478,6 +478,8 @@ function renderChatMessages(state) {
     if (!state.messages || state.messages.length === 0) {
         return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
     }
+    console.log("mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", state);
+    
                 // state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
 
     // if (state.message.length > 20) {
@@ -555,14 +557,6 @@ function renderMenu(state, emit) {
             'Join Game';
 
     return CreateElement('div', { class: 'menu-container' }, [
-        CreateElement('div', { class: 'player-image' }, [
-            CreateElement('img', {
-                src: './styles/picture_enter.gif',
-                alt: 'Player Avatar',
-                class: 'player-avatar'
-            })
-        ]),
-
         CreateElement('div', { class: 'menu-form' }, [
             CreateElement('h1', { class: 'welcome-title' }, ['💣 Bomberman Game 💣']),
             CreateElement('p', { class: 'subtitle' }, ['Enter your name to join the battle!']),
@@ -646,6 +640,7 @@ function renderWaiting(state, emit) {
 
             renderChatMessages(state),
             state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+            state.errorMessage = '',
 
             CreateElement('div', { class: 'chat-input-container' }, [
                 CreateElement('input', {
