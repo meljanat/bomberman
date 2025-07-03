@@ -24,7 +24,9 @@ const initialState = {
     messages: [],
     showChat: false,
     countdown: 0,
+    countdownroom: 0,
     isCountingDown: false,
+    isCountingDownRoom: false,
     explosions: [],
     chatInput: '',
     currentPlayer: null,
@@ -219,8 +221,13 @@ const reducers = {
                 if (data.state === 'waiting') {
                     newState.screen = 'waiting';
                     newState.statusMessage = `Waiting for players... (${data.players.length}/4)`;
+                } else if (data.state === 'countdownroom') {
+                    newState.screen = 'countdownroom';
+                    newState.isCountingDownRoom = true;
+                    newState.countdownroom = data.countdownroom || 20;
                 } else if (data.state === 'countdown') {
                     newState.screen = 'countdown';
+                    newState.isCountingDownRoom = false;
                     newState.isCountingDown = true;
                     newState.countdown = data.countdown || 10;
                 } else if (data.state === 'playing') {
@@ -253,6 +260,14 @@ const reducers = {
                     countdown: data.seconds
                 };
 
+            case 'countdownroom':
+                return {
+                    ...state,
+                    screen: 'countdownroom',
+                    isCountingDownRoom: true,
+                    countdownroom: data.seconds
+                };
+            
             case 'gameStart':
                 return {
                     ...state,
@@ -613,6 +628,10 @@ function renderWaiting(state, emit) {
     return CreateElement('div', { class: 'menu-container' }, [
         CreateElement('div', { class: 'menu-form' }, [
             CreateElement('h1', { class: 'welcome-title' }, ['⏳ Waiting for Players...']),
+            !state.countdownroom?
+            CreateElement('div', { class: 'countdown-display' }, [
+                CreateElement('div', { class: 'countdown-number' }, [state.countdownroom.toString()]),
+            ]):null,
             CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
             CreateElement('div', { class: 'players-list' }, [
                 CreateElement('h3', {}, ['Players in lobby:']),

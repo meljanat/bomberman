@@ -56,7 +56,9 @@ let gridSize = 11;
 let gameState = 'waiting'; // 'waiting', 'countdown', 'playing', 'ended'
 let gameStartTimer = null;
 let countdownTimer = null;
+let countdownTimerroom = null;
 let countdownSeconds = 10;
+let countdownSecondsroom = 20;
 
 let messages = [];
 let board = [
@@ -126,7 +128,7 @@ wss.on('connection', (ws) => {
                 }
             } else if (data.type === 'message') {
                 console.log("fiiiiiiiiiiiiiiiiinnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
-                
+
                 const player = getPlayerByWebSocket(ws);
                 if (player) {
                     handleChatMessage(player, data.message, ws);
@@ -205,7 +207,7 @@ function handlePlayerJoin(ws, name) {
 
     // Validate name
     const nameValidation = checkName(name);
-    
+
     if (!nameValidation[0]) {
         ws.send(JSON.stringify({ type: 'error', message: nameValidation[1] }));
         return;
@@ -238,33 +240,25 @@ function handlePlayerJoin(ws, name) {
 
     console.log(`Player ${name} joined. Total players: ${players.length}`);
 
-    // Add blocks on first player join
     if (players.length === 1) {
         addBlocks();
     }
 
-    // Broadcast player joined
     players.map(a => {
         broadcast(JSON.stringify({ type: 'playerJoined', players }), a.id);
     })
-    
 
-    // Handle game start logic
+
     if (players.length >= 2) {
         if (players.length === 4) {
-            // Start countdown immediately with 4 players
             startCountdown();
         } else if (!gameStartTimer) {
-            // Start 20-second timer for 2-3 players
-            gameStartTimer = setTimeout(() => {
-                if (players.length >= 2) {
-                    startCountdown();
-                }
-            }, 20000);
+            if (players.length >= 2) {
+                startCountdownRoom();
+            }
         }
     }
 
-    // Send current game state
     ws.send(JSON.stringify({
         type: 'gameState',
         state: gameState,
@@ -274,6 +268,29 @@ function handlePlayerJoin(ws, name) {
         powerUps,
         countdown: countdownSeconds
     }));
+}
+
+function startCountdownRoom() {
+    gameState = 'countdownroom';
+    countdownSecondsroom = 20;
+
+    broadcast(JSON.stringify({
+        type: 'countdownroom',
+        seconds: countdownSecondsroom
+    }));
+
+    countdownTimerroom = setInterval(() => {
+        countdownSecondsroom--;
+        broadcast(JSON.stringify({
+            type: 'countdownroom',
+            seconds: countdownSecondsroom
+        }));
+
+        if (countdownSecondsroom <= 0) {
+            clearInterval(countdownTimerroom);
+            startCountdown();
+        }
+    }, 1000);
 }
 
 function startCountdown() {
@@ -303,7 +320,7 @@ function startCountdown() {
 
 function startGame() {
     gameState = 'playing';
-    gameStarted = true; // Fixed: set gameStarted flag
+    gameStarted = true;
     broadcast(JSON.stringify({
         type: 'gameStart',
         board,
@@ -334,7 +351,6 @@ function getPlayerByWebSocket(ws) {
 }
 
 function addBlocks() {
-    // Clear the board first (keep walls)
     for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
             if (board[i][j] === 1) {
@@ -343,11 +359,9 @@ function addBlocks() {
         }
     }
 
-    // Add destructible blocks randomly
     for (let i = 1; i < gridSize - 1; i++) {
         for (let j = 1; j < gridSize - 1; j++) {
             if (board[i][j] === 0) {
-                // Don't place blocks too close to starting positions
                 const isNearStart = positions.some(pos =>
                     Math.abs(pos.x - j) <= 1 && Math.abs(pos.y - i) <= 1
                 );
@@ -397,7 +411,6 @@ function handlePlayerMove(player, direction) {
         player.x = newX;
         player.y = newY;
 
-        // Check for power-up collection
         checkPowerUpCollection(player);
 
         broadcast(JSON.stringify({ type: 'playerMoved', players }));
@@ -407,13 +420,10 @@ function handlePlayerMove(player, direction) {
 function checkTile(x, y, player) {
     if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) return false;
 
-    // Check walls
     if (board[y][x] === 2) return false;
 
-    // Check blocks (unless player has block pass)
     if (board[y][x] === 1 && !player.powerUps.blockPass) return false;
 
-    // Check bombs (unless player has bomb pass)
     const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
     if (hasBomb && !player.powerUps.bombPass) return false;
 
@@ -442,7 +452,7 @@ function applyPowerUp(player, powerUp) {
             player.flameSize++;
             break;
         case 'speed':
-            player.speed = Math.min(player.speed + 0.5, 3); // Max speed 3x
+            player.speed = Math.min(player.speed + 0.5, 3);
             break;
         case 'bombPass':
             player.powerUps.bombPass = true;
@@ -460,11 +470,9 @@ function applyPowerUp(player, powerUp) {
 }
 
 function handlePlaceBomb(player) {
-    // Check if player can place more bombs
     const playerBombs = bombs.filter(bomb => bomb.playerId === player.id);
     if (playerBombs.length >= player.bombCount) return;
 
-    // Check if there's already a bomb at this position
     const existingBomb = bombs.find(bomb => bomb.x === player.x && bomb.y === player.y);
     if (existingBomb) return;
 
@@ -489,18 +497,15 @@ function handlePlaceBomb(player) {
 }
 
 function explodeBomb(bomb, player) {
-    // Remove the bomb from the array
     const bombIndex = bombs.findIndex(b => b === bomb);
-    if (bombIndex === -1) return; // Bomb already exploded
+    if (bombIndex === -1) return;
 
     bombs.splice(bombIndex, 1);
 
-    // Calculate explosion positions
     let explosions = [
         { x: bomb.x, y: bomb.y }
     ];
 
-    // Add cross-shaped explosion with flame size
     const directions = [
         { dx: 0, dy: -1 }, // up
         { dx: 0, dy: 1 },  // down
@@ -514,27 +519,24 @@ function explodeBomb(bomb, player) {
             const explY = bomb.y + dir.dy * i;
 
             if (explX >= 0 && explX < gridSize && explY >= 0 && explY < gridSize) {
-                if (board[explY][explX] === 2) break; // Hit wall, stop explosion
+                if (board[explY][explX] === 2) break;
 
                 explosions.push({ x: explX, y: explY });
 
-                // Destroy blocks and potentially create power-ups
                 if (board[explY][explX] === 1) {
                     board[explY][explX] = 0;
 
-                    // 30% chance to spawn power-up
                     if (Math.random() < 0.3) {
                         spawnPowerUp(explX, explY);
                     }
-                    break; // Block stops explosion
+                    break;
                 }
             } else {
-                break; // Out of bounds
+                break;
             }
         }
     });
 
-    // Check which players are hit by explosion
     players.forEach((hitPlayer) => {
         if (!hitPlayer.alive) return;
 
@@ -566,7 +568,6 @@ function explodeBomb(bomb, player) {
         explosions
     }));
 
-    // Check for game over
     setTimeout(() => {
         checkGameOver();
     }, 1000);
