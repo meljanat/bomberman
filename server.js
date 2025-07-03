@@ -200,11 +200,15 @@ function handleChatMessage(player, messageText, ws) {
 
 function handlePlayerJoin(ws, name) {
     // Check if room is full
-    if (players.length >= 4 || gameStarted) {
+    if (players.length >= 4) {
         ws.send(JSON.stringify({ type: 'error', message: 'Room is already full.' }));
         return;
     }
 
+    if (gameStarted) {
+        ws.send(JSON.stringify({ type: 'error', message: 'Game has already started.' }));
+        return;
+    }
     // Validate name
     const nameValidation = checkName(name);
 
@@ -457,19 +461,7 @@ function applyPowerUp(player, powerUp) {
             player.flameSize++;
             break;
         case 'speed':
-            player.speed = Math.min(player.speed + 0.5, 3);
-            break;
-        case 'bombPass':
-            player.powerUps.bombPass = true;
-            break;
-        case 'blockPass':
-            player.powerUps.blockPass = true;
-            break;
-        case 'detonator':
-            player.powerUps.detonator = true;
-            break;
-        case 'oneUp':
-            player.lives++;
+            player.speed = Math.min(player.speed + 0.5, 2); // Max speed 2x
             break;
     }
 }
@@ -487,18 +479,12 @@ function handlePlaceBomb(player) {
         playerId: player.id,
         timestamp: Date.now(),
         flameSize: player.flameSize,
-        detonator: player.powerUps.detonator
     };
 
     bombs.push(bomb);
 
     broadcast(JSON.stringify({ type: 'bombPlaced', bombs }));
 
-    if (!bomb.detonator) {
-        setTimeout(() => {
-            explodeBomb(bomb, player);
-        }, 2000);
-    }
 }
 
 function explodeBomb(bomb, player) {
@@ -579,7 +565,7 @@ function explodeBomb(bomb, player) {
 }
 
 function spawnPowerUp(x, y) {
-    const powerUpTypes = ['bombs', 'flames', 'speed', 'bombPass', 'blockPass', 'detonator', 'oneUp'];
+    const powerUpTypes = ['bombs', 'flames', 'speed'];
     const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
 
     const powerUp = {
