@@ -39,7 +39,7 @@ const server = http.createServer(async (req, res) => {
         });
         res.end(data);
     } catch (err) {
-        console.error('Error handling request:', err);
+        // console.error('Error handling request:', err);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Internal Server Error');
     }
@@ -47,13 +47,12 @@ const server = http.createServer(async (req, res) => {
 
 const wss = new WebSocket.Server({ server });
 
-// Game state
 let players = [];
 let bombs = [];
 let powerUps = [];
 let chatMessages = [];
 let gridSize = 11;
-let gameState = 'waiting'; // 'waiting', 'countdown', 'playing', 'ended'
+let gameState = 'waiting';
 let gameStartTimer = null;
 let countdownTimer = null;
 let countdownSeconds = 10;
@@ -82,22 +81,20 @@ const positions = [
 
 let gameStarted = false;
 
-// Store player WebSocket connections
 let playerConnections = new Map();
 
 wss.on('connection', (ws) => {
-    console.log('A new player connected.');
+    // console.log('A new player connected.');
 
-    // Send current chat messages to new player
     ws.send(JSON.stringify({
         type: 'chatHistory',
-        messages: chatMessages.slice(-20) // Send last 50 messages
+        messages: chatMessages.slice(-20) 
     }));
 
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-            console.log('Received message:', data);
+            // console.log('Received message:', data);
 
             if (data.type === 'start') {
                 handlePlayerJoin(ws, data.name);
@@ -112,12 +109,8 @@ wss.on('connection', (ws) => {
                     handlePlaceBomb(player);
                 }
             } else if (data.type === 'leaveGame') {
-                console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
-
                 const player = getPlayerByWebSocket(ws);
-                console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh", player);
                 if (player) {
-
                     playerConnections.delete(player.id);
                     players = players.filter(a => a.id != player.id);
                     if (players.length < 2) {
@@ -125,11 +118,18 @@ wss.on('connection', (ws) => {
                     }
                 }
             } else if (data.type === 'message') {
-                console.log("fiiiiiiiiiiiiiiiiinnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
-
                 const player = getPlayerByWebSocket(ws);
                 if (player) {
                     handleChatMessage(player, data.message, ws);
+                }
+            } else if (data.type === 'leaveRoom') {
+                const player = getPlayerByWebSocket(ws);
+                if (player) {
+                    playerConnections.delete(player.id);
+                    players = players.filter(a => a.id !== player.id);
+                    ws.send(JSON.stringify({ type: 'roomLeft' }));
+                    broadcast(JSON.stringify({ type: 'playerLeft', players }));
+                    checkGameOver();
                 }
             }
         } catch (error) {
@@ -138,21 +138,19 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        console.log('A player disconnected.');
+        // console.log('A player disconnected.');
         let player = getPlayerByWebSocket(ws);
         if (player) {
             players = players.filter((p) => p.id !== player.id);
             playerConnections.delete(player.id);
             broadcast(JSON.stringify({ type: 'playerLeft', players }));
 
-            // Reset timers if not enough players
             if (players.length < 2) {
                 clearGameTimers();
                 gameState = 'waiting';
                 broadcast(JSON.stringify({ type: 'gameState', state: gameState }));
             }
 
-            // Check for game over
             if (gameState === 'playing') {
                 checkGameOver();
             }
@@ -160,7 +158,7 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
+        // console.error('WebSocket error:', error);
     });
 });
 
@@ -171,8 +169,7 @@ function handleChatMessage(player, messageText, ws) {
 
     messageText = messageText.trim();
     if (messageText.length === 0 || messageText.length > 20) {
-        // console.log("kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk");
-        ws.send(JSON.stringify({ type: 'error', message: 'Invalid message lenght' }));
+        ws.send(JSON.stringify({ type: 'error', message: 'Invalid message length' }));
         return;
     }
 
@@ -196,7 +193,6 @@ function handleChatMessage(player, messageText, ws) {
 }
 
 function handlePlayerJoin(ws, name) {
-    // Check if room is full
     if (players.length >= 4) {
         ws.send(JSON.stringify({ type: 'error', message: 'Room is already full.' }));
         return;
@@ -206,16 +202,15 @@ function handlePlayerJoin(ws, name) {
         ws.send(JSON.stringify({ type: 'error', message: 'Game has already started.' }));
         return;
     }
-    // Validate name
+
     const nameValidation = checkName(name);
     if (!nameValidation[0]) {
         ws.send(JSON.stringify({ type: 'error', message: nameValidation[1] }));
         return;
     }
 
-    // Create new player
-    const playerId = Date.now(); // Use timestamp for unique ID
-    const playerPosition = positions[players.length]; // Use array length for position
+    const playerId = Date.now();
+    const playerPosition = positions[players.length];
 
     const player = {
         id: playerId,
@@ -223,34 +218,29 @@ function handlePlayerJoin(ws, name) {
         y: playerPosition.y,
         lives: 3,
         name: name,
-        alive: true, // Fixed: added alive property
-        bombCount: 1,     // How many bombs can be placed at once
-        bombs: 0,         // Fixed: current bombs placed
-        flameSize: 1,     // Explosion range
-        speed: 1,         // Movement speed multiplier
+        alive: true,
+        bombCount: 1,
+        bombs: 0,
+        flameSize: 1,
+        speed: 1,
         powerUps: {}
     };
 
     players.push(player);
     playerConnections.set(playerId, ws);
 
-    console.log(`Player ${name} joined. Total players: ${players.length}`);
+    // console.log(`Player ${name} joined. Total players: ${players.length}`);
 
-    // Add blocks on first player join
     if (players.length === 1) {
         addBlocks();
     }
 
-    // Broadcast player joined
-    broadcast(JSON.stringify({ type: 'playerJoined', players }), player.id);
+    players.map(p => {broadcast(JSON.stringify({ type: 'playerJoined', players}), p.id)});
 
-    // Handle game start logic
     if (players.length >= 2) {
         if (players.length === 4) {
-            // Start countdown immediately with 4 players
             startCountdown();
         } else if (!gameStartTimer) {
-            // Start 20-second timer for 2-3 players
             gameStartTimer = setTimeout(() => {
                 if (players.length >= 2) {
                     startCountdown();
@@ -259,7 +249,6 @@ function handlePlayerJoin(ws, name) {
         }
     }
 
-    // Send current game state
     ws.send(JSON.stringify({
         type: 'gameState',
         state: gameState,
@@ -298,7 +287,7 @@ function startCountdown() {
 
 function startGame() {
     gameState = 'playing';
-    gameStarted = true; // Fixed: set gameStarted flag
+    gameStarted = true;
     broadcast(JSON.stringify({
         type: 'gameStart',
         board,
@@ -329,7 +318,6 @@ function getPlayerByWebSocket(ws) {
 }
 
 function addBlocks() {
-    // Clear the board first (keep walls)
     for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
             if (board[i][j] === 1) {
@@ -338,11 +326,9 @@ function addBlocks() {
         }
     }
 
-    // Add destructible blocks randomly
     for (let i = 1; i < gridSize - 1; i++) {
         for (let j = 1; j < gridSize - 1; j++) {
             if (board[i][j] === 0) {
-                // Don't place blocks too close to starting positions
                 const isNearStart = positions.some(pos =>
                     Math.abs(pos.x - j) <= 1 && Math.abs(pos.y - i) <= 1
                 );
@@ -371,7 +357,7 @@ function checkName(name) {
 }
 
 function broadcast(message, id) {
-    console.log('Broadcasting:', message);
+    // console.log('Broadcasting:', message);
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN && (!id || playerConnections.get(id) == client)) {
             client.send(message);
@@ -392,7 +378,6 @@ function handlePlayerMove(player, direction) {
         player.x = newX;
         player.y = newY;
 
-        // Check for power-up collection
         checkPowerUpCollection(player);
 
         broadcast(JSON.stringify({ type: 'playerMoved', players }));
@@ -402,13 +387,10 @@ function handlePlayerMove(player, direction) {
 function checkTile(x, y, player) {
     if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) return false;
 
-    // Check walls
     if (board[y][x] === 2) return false;
 
-    // Check blocks (unless player has block pass)
     if (board[y][x] === 1 && !player.powerUps.blockPass) return false;
 
-    // Check bombs (unless player has bomb pass)
     const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
     if (hasBomb && !player.powerUps.bombPass) return false;
 
@@ -437,17 +419,15 @@ function applyPowerUp(player, powerUp) {
             player.flameSize++;
             break;
         case 'speed':
-            player.speed = Math.min(player.speed + 0.5, 2); // Max speed 2x
+            player.speed = Math.min(player.speed + 0.5, 2);
             break;
     }
 }
 
 function handlePlaceBomb(player) {
-    // Check if player can place more bombs
     const playerBombs = bombs.filter(bomb => bomb.playerId === player.id);
     if (playerBombs.length >= player.bombCount) return;
 
-    // Check if there's already a bomb at this position
     const existingBomb = bombs.find(bomb => bomb.x === player.x && bomb.y === player.y);
     if (existingBomb) return;
 
@@ -459,30 +439,27 @@ function handlePlaceBomb(player) {
     };
 
     bombs.push(bomb);
-    // explodeBomb(bomb)
+    
+    setTimeout(()=> {explodeBomb(bomb)}, 3000)
 
     broadcast(JSON.stringify({ type: 'bombPlaced', bombs }));
-
 }
 
 function explodeBomb(bomb) {
-    // Remove the bomb from the array
     const bombIndex = bombs.findIndex(b => b === bomb);
-    if (bombIndex === -1) return; // Bomb already exploded
+    if (bombIndex === -1) return;
 
     bombs.splice(bombIndex, 1);
 
-    // Calculate explosion positions
     let explosions = [
         { x: bomb.x, y: bomb.y }
     ];
 
-    // Add cross-shaped explosion with flame size
     const directions = [
-        { dx: 0, dy: -1 }, // up
-        { dx: 0, dy: 1 },  // down
-        { dx: -1, dy: 0 }, // left
-        { dx: 1, dy: 0 }   // right
+        { dx: 0, dy: -1 },
+        { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 },
+        { dx: 1, dy: 0 }
     ];
 
     directions.forEach(dir => {
@@ -491,27 +468,24 @@ function explodeBomb(bomb) {
             const explY = bomb.y + dir.dy * i;
 
             if (explX >= 0 && explX < gridSize && explY >= 0 && explY < gridSize) {
-                if (board[explY][explX] === 2) break; // Hit wall, stop explosion
+                if (board[explY][explX] === 2) break;
 
                 explosions.push({ x: explX, y: explY });
 
-                // Destroy blocks and potentially create power-ups
                 if (board[explY][explX] === 1) {
                     board[explY][explX] = 0;
 
-                    // 30% chance to spawn power-up
                     if (Math.random() < 0.3) {
                         spawnPowerUp(explX, explY);
                     }
-                    break; // Block stops explosion
+                    break;
                 }
             } else {
-                break; // Out of bounds
+                break;
             }
         }
     });
 
-    // Check which players are hit by explosion
     players.forEach((hitPlayer) => {
         if (!hitPlayer.alive) return;
 
@@ -523,10 +497,8 @@ function explodeBomb(bomb) {
             hitPlayer.lives--;
             if (hitPlayer.lives <= 0) {
                 hitPlayer.alive = false;
-                // Drop power-up on death (bonus feature)
                 dropPowerUpOnDeath(hitPlayer);
             } else {
-                // Respawn player at starting position
                 const startPos = positions[players.indexOf(hitPlayer) % positions.length];
                 hitPlayer.x = startPos.x;
                 hitPlayer.y = startPos.y;
@@ -543,7 +515,6 @@ function explodeBomb(bomb) {
         explosions
     }));
 
-    // Check for game over
     setTimeout(() => {
         checkGameOver();
     }, 1000);
@@ -564,7 +535,6 @@ function spawnPowerUp(x, y) {
 }
 
 function dropPowerUpOnDeath(player) {
-    // Drop a random power-up at player's death location
     const powerUpTypes = ['bombs', 'flames', 'speed'];
     const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
 
@@ -590,7 +560,7 @@ function checkGameOver() {
 
         setTimeout(() => {
             resetGame();
-        }, 10000);
+        }, 1000);
     }
 }
 
@@ -599,11 +569,10 @@ function resetGame() {
     bombs = [];
     powerUps = [];
     gameState = 'waiting';
-    gameStarted = false; // Fixed: reset gameStarted flag
+    gameStarted = false;
     playerConnections.clear();
     clearGameTimers();
 
-    // Reset board
     board = [
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
         [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
@@ -621,8 +590,7 @@ function resetGame() {
     broadcast(JSON.stringify({ type: 'gameReset' }));
 }
 
-// Start the server
 const PORT = 8888;
 server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    // console.log(`Server is running on http://localhost:${PORT}`);
 });
