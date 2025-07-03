@@ -413,10 +413,10 @@ function checkPowerUpCollection(player) {
 function applyPowerUp(player, powerUp) {
     switch (powerUp.type) {
         case 'bombs':
-            player.bombCount++;
+            player.bombCount = Math.min(player.bombCount + 1, 3);
             break;
         case 'flames':
-            player.flameSize++;
+            player.flameSize = Math.min(player.flameSize + 1, 3);
             break;
         case 'speed':
             player.speed = Math.min(player.speed + 0.5, 2);
