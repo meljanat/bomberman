@@ -12,12 +12,14 @@ export function setAttributes(el, attrs) {
     }
     
     for (const [name, value] of Object.entries(otherAttrs)) {
+        
         if (value == null) {
             el[name] = null;
             el.removeAttribute(name);
         } else if (name.startsWith('data-')) {
             el.setAttribute(name, value);
         } else {
+            el.setAttribute(name, value);
             el[name] = value;
         }
     }
