@@ -6,7 +6,6 @@ let animationId = null;
 let lastFrameTime = 0;
 let frameCount = 0;
 let fpsDisplay = 0;
-let check = false;
 
 const initialState = {
     screen: 'menu', // 'menu', 'waiting', 'countdown', 'game', 'gameOver'
@@ -466,8 +465,7 @@ function startGameLoop(emit) {
         }
         frameCount++;
 
-        // Clear explosions after animation
-        if (Math.random() < 0.1) { // Clear explosions occasionally
+        if (Math.random() < 0.1) {
             emit('clearExplosions');
         }
 

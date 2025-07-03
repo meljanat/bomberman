@@ -93,7 +93,7 @@ wss.on('connection', (ws) => {
     // Send current chat messages to new player
     ws.send(JSON.stringify({
         type: 'chatHistory',
-        messages: chatMessages.slice(-20) // Send last 50 messages
+        messages: chatMessages.slice(-20) // Send last 20 messages
     }));
 
     ws.on('message', (message) => {
