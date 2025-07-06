@@ -14,9 +14,9 @@ export function CreateElementText(str) {
     }
 }
 
-export function CreateElementFragement(vNodes) {
+export function CreateElementFragment(vNodes) {
     return {
-        type: "fragement",
+        type: "fragment",
         children: mapTextNodes(withoutNulls(vNodes)),
     }
 }
