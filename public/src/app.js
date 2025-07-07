@@ -1,6 +1,7 @@
 import { destroyDOM } from './destroy-dom.js'
 import { createDispatcher } from './dispatcher.js'
 import { mountDOM } from './mount-dom.js'
+import { patchDOM } from './diff_algo.js'
 
 export function createApp({ state, view, reducers = {} }) {
     let parentEl = null;
@@ -11,19 +12,13 @@ export function createApp({ state, view, reducers = {} }) {
     const subscriptions = [dispatcher.afterEveryCommand(renderApp)];
 
     function emit(eventName, payload) {
-        console.log('Emitting:', eventName, payload);
         dispatcher.dispatch(eventName, payload);
     }
 
     for (const actionName in reducers) {
         const reducer = reducers[actionName];
         const subs = dispatcher.subscribe(actionName, payload => {
-            console.log(`Applying reducer: ${actionName}`);
-            const newState = reducer(state, payload);
-            if (newState !== state) {
-                state = newState;
-                console.log('State updated:', state);
-            }
+            state = reducer(state, payload);
         });
         subscriptions.push(subs);
     }
@@ -32,12 +27,11 @@ export function createApp({ state, view, reducers = {} }) {
         const path = window.location.hash.slice(1) || '/';
         dispatcher.dispatch('routeChange', path);
     }
-    
+
     window.addEventListener('popstate', handlePopState);
 
     function navigate(path) {
         window.location.hash = path === '/' ? '' : path;
-        emit('routeChange', path);
     }
 
     function renderApp() {
@@ -52,21 +46,25 @@ export function createApp({ state, view, reducers = {} }) {
         const elementClass = isInput ? activeElement.className : null;
         const elementId = isInput && activeElement.dataset ? activeElement.dataset.todoId : null;
 
+        const newVdom = view(state, emit, navigate);
+
         if (vdom) {
-            destroyDOM(vdom);
+            patchDOM(vdom, newVdom, parentEl);
+        } else {
+            mountDOM(newVdom, parentEl);
         }
-        vdom = view(state, emit, navigate);
-        mountDOM(vdom, parentEl);
+
+        vdom = newVdom;
 
         if (isInput && elementClass) {
             let targetInput = null;
-            
+
             if (isEditingInput && elementId) {
                 targetInput = parentEl.querySelector(`input.edit[data-todo-id="${elementId}"]`);
             } else if (!isEditingInput) {
                 targetInput = parentEl.querySelector(`input.${elementClass.replace(/\s+/g, '.')}`);
             }
-            
+
             if (targetInput) {
                 targetInput.focus();
                 if (cursorPos !== null && cursorEnd !== null) {
@@ -99,8 +97,6 @@ export function createApp({ state, view, reducers = {} }) {
             if (vdom) destroyDOM(vdom);
             vdom = null;
             subscriptions.forEach(unsubscribe => unsubscribe());
-        },
-        get state() { return state; },
-        set state(newState) { state = newState; }
+        }
     };
 }

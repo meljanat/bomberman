@@ -8,7 +8,7 @@ export function createDispatcher() {
         }
         const handlers = subs.get(commandName);
         if (handlers.includes(handler)) {
-            return () => {};
+            return () => { };
         }
         handlers.push(handler);
         return () => {
@@ -26,10 +26,14 @@ export function createDispatcher() {
     }
 
     function dispatch(commandName, payload) {
-        if (subs.has(commandName)) {
-            subs.get(commandName).forEach(handler => handler(payload));
+        try {
+            if (subs.has(commandName)) {
+                subs.get(commandName).forEach(handler => handler(payload));
+            }
+            afterHandlers.forEach(handler => handler(commandName, payload));
+        } catch (error) {
+            console.error(`Error dispatching ${commandName}:`, error);
         }
-        afterHandlers.forEach(handler => handler());
     }
 
     return { subscribe, afterEveryCommand, dispatch };
