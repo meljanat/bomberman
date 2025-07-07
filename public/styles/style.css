@@ -156,6 +156,14 @@ body {
     outline: none;
 }
 
+.message-container {
+    min-height: 40px; /* Reserve space for messages */
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
 .name-input:focus {
     border-color: #3498db;
     background: rgba(255, 255, 255, 0.15);

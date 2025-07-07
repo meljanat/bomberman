@@ -97,6 +97,7 @@ const reducers = {
 
         if (socket && socket.readyState === WebSocket.OPEN) {
             console.log('Already connected');
+
             return { ...state, connected: true };
         }
 
@@ -573,8 +574,10 @@ function renderMenu(state, emit) {
             CreateElement('h1', { class: 'welcome-title' }, ['💣 Bomberman Game 💣']),
             CreateElement('p', { class: 'subtitle' }, ['Enter your name to join the battle!']),
 
-            state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
-            state.statusMessage ? CreateElement('div', { class: 'status-message' }, [state.statusMessage]) : null,
+            CreateElement('div', { class: 'message-container' }, [
+                state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+                state.statusMessage ? CreateElement('div', { class: 'status-message' }, [state.statusMessage]) : null,
+            ].filter(Boolean)),
 
             CreateElement('div', { class: 'input-group' }, [
                 CreateElement('label', { class: 'input-label' }, ['Player Name:']),
@@ -631,14 +634,19 @@ function renderWaiting(state, emit) {
                 ]),
             ]),
             CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
+            
+            CreateElement('div', { class: 'message-container' }, [
+                state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+            ].filter(Boolean)),
+            
             CreateElement('div', { class: 'players-list' }, [
-                CreateElement('h3', {}, ['Players in lobby:']),
-                ...state.players.map(player =>
+                CreateElement('h3', {}, ['Players in lobby:'].filter(Boolean)),
+                ...(state.players || []).map(player =>
                     CreateElement('div', { class: 'player-item' }, [
                         `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
-                    ])
+                    ].filter(Boolean))
                 )
-            ]),
+            ].filter(Boolean)),
             CreateElement('div', { class: 'loading-indicator' }, [
                 CreateElement('div', { class: 'spinner' })
             ]),
@@ -647,17 +655,14 @@ function renderWaiting(state, emit) {
                     class: 'btn btn-secondary',
                     on: {
                         click: () => {
-                            emit('resetGame'),
-                                emit('leaveGame')
+                            emit('resetGame');
+                            emit('leaveGame');
                         },
                     }
                 }, ['Back to Menu'])
             ]),
 
-
             renderChatMessages(state),
-            state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
-            state.errorMessage = '',
 
             CreateElement('div', { class: 'chat-input-container' }, [
                 CreateElement('input', {
@@ -930,7 +935,7 @@ window.appEmit = app.emit;
 setTimeout(() => {
     console.log('Attempting initial connection to server...');
     window.appEmit('connectToServer');
-}, 1000);
+}, 2000);
 
 // Handle page visibility changes
 document.addEventListener('visibilitychange', () => {
