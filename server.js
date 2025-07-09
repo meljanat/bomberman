@@ -2,6 +2,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs').promises;
 const path = require('path');
+const { clearInterval } = require('timers');
 
 const staticFiles = path.join(__dirname, 'public');
 
@@ -47,7 +48,6 @@ const server = http.createServer(async (req, res) => {
 
 const wss = new WebSocket.Server({ server });
 
-// Game state
 let players = [];
 let bombs = [];
 let powerUps = [];
@@ -84,16 +84,14 @@ const positions = [
 
 let gameStarted = false;
 
-// Store player WebSocket connections
 let playerConnections = new Map();
 
 wss.on('connection', (ws) => {
     console.log('A new player connected.');
 
-    // Send current chat messages to new player
     ws.send(JSON.stringify({
         type: 'chatHistory',
-        messages: chatMessages.slice(-20) // Send last 50 messages
+        messages: chatMessages.slice(-20)
     }));
 
     ws.on('message', (message) => {
@@ -114,12 +112,8 @@ wss.on('connection', (ws) => {
                     handlePlaceBomb(player);
                 }
             } else if (data.type === 'leaveGame') {
-                console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
-
                 const player = getPlayerByWebSocket(ws);
-                console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh", player);
                 if (player) {
-
                     playerConnections.delete(player.id);
                     players = players.filter(a => a.id != player.id);
                     if (players.length < 2) {
@@ -127,11 +121,33 @@ wss.on('connection', (ws) => {
                     }
                 }
             } else if (data.type === 'message') {
-                console.log("fiiiiiiiiiiiiiiiiinnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
-
                 const player = getPlayerByWebSocket(ws);
                 if (player) {
                     handleChatMessage(player, data.message, ws);
+                }
+            } else if (data.type === 'leaveRoom') {
+                console.log("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo");
+                const player = getPlayerByWebSocket(ws);
+                playerConnections.delete(player.id);
+                players = players.filter(a => a.id != player.id);
+                if (players.length < 2) {
+                    console.log(players, "dddddddddddddddddddddddddddddddddddd");
+                    if (countdownTimerroom) {
+                        clearInterval(countdownTimerroom);
+                        countdownTimerroom = null;
+                    }
+                    if (countdownTimer) {
+                        clearInterval(countdownTimer);
+                        countdownTimer = null;
+                    } players.map((p) => {
+                        broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
+                        broadcast(JSON.stringify({ type: 'waiting', players }), p.id);
+                    })
+                } else {
+                    players.map((p) => {
+                        broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
+                        broadcast(JSON.stringify({ type: 'waiting', players }), p.id);
+                    });
                 }
             }
         } catch (error) {
@@ -145,16 +161,19 @@ wss.on('connection', (ws) => {
         if (player) {
             players = players.filter((p) => p.id !== player.id);
             playerConnections.delete(player.id);
-            broadcast(JSON.stringify({ type: 'playerLeft', players }));
+            players.map((p) => {
+                broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
+            })
 
-            // Reset timers if not enough players
             if (players.length < 2) {
                 clearGameTimers();
                 gameState = 'waiting';
-                broadcast(JSON.stringify({ type: 'gameState', state: gameState }));
+                players.map((p) => {
+
+                    broadcast(JSON.stringify({ type: 'gameState', state: gameState }), p.id);
+                })
             }
 
-            // Check for game over
             if (gameState === 'playing') {
                 checkGameOver();
             }
@@ -199,7 +218,6 @@ function handleChatMessage(player, messageText, ws) {
 }
 
 function handlePlayerJoin(ws, name) {
-    // Check if room is full
     if (players.length >= 4) {
         ws.send(JSON.stringify({ type: 'error', message: 'Room is already full.' }));
         return;
@@ -209,7 +227,6 @@ function handlePlayerJoin(ws, name) {
         ws.send(JSON.stringify({ type: 'error', message: 'Game has already started.' }));
         return;
     }
-    // Validate name
     const nameValidation = checkName(name);
 
     if (!nameValidation[0]) {
@@ -217,9 +234,8 @@ function handlePlayerJoin(ws, name) {
         return;
     }
 
-    // Create new player
-    const playerId = Date.now(); // Use timestamp for unique ID
-    const playerPosition = positions[players.length]; // Use array length for position
+    const playerId = Date.now();
+    const playerPosition = positions[players.length];
 
     const player = {
         id: playerId,
@@ -227,11 +243,11 @@ function handlePlayerJoin(ws, name) {
         y: playerPosition.y,
         lives: 3,
         name: name,
-        alive: true, // Fixed: added alive property
-        bombCount: 1,     // How many bombs can be placed at once
-        bombs: 0,         // Fixed: current bombs placed
-        flameSize: 1,     // Explosion range
-        speed: 1,         // Movement speed multiplier
+        alive: true,
+        bombCount: 1,
+        bombs: 0,
+        flameSize: 1,
+        speed: 1,
         powerUps: {
             bombPass: false,
             blockPass: false,
@@ -263,8 +279,6 @@ function handlePlayerJoin(ws, name) {
         }
     }
 
-    console.log("mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmpppppppppppppppppppppppppppppp");
-
     ws.send(JSON.stringify({
         type: 'gameState',
         state: gameState,
@@ -281,21 +295,24 @@ function startCountdownRoom() {
     gameState = 'waiting';
     countdownSecondsroom = 20;
 
-    broadcast(JSON.stringify({
-        type: 'waiting',
-        secondsroom: countdownSecondsroom,
-        countdownroom: countdownSecondsroom,
-    }));
+    // broadcast(JSON.stringify({
+    //     type: 'waiting',
+    //     secondsroom: countdownSecondsroom,
+    //     countdownroom: countdownSecondsroom,
+    // }));
+    players.map(a => {
+        broadcast(JSON.stringify({ type: 'waiting', secondsroom: countdownSecondsroom, countdownroom: countdownSecondsroom, players }), a.id);
+    });
 
     countdownTimerroom = setInterval(() => {
         countdownSecondsroom--;
-        broadcast(JSON.stringify({
-            type: 'waiting',
-            secondsroom: countdownSecondsroom,
-            countdownroom: countdownSecondsroom,
-        }));
+        players.map(a => {
+            broadcast(JSON.stringify({ type: 'waiting', secondsroom: countdownSecondsroom, countdownroom: countdownSecondsroom, players }), a.id);
+        });
 
         if (countdownSecondsroom <= 0) {
+            console.log("checkkkkkkkkkkkkkkkkkkkkkk");
+            
             clearInterval(countdownTimerroom);
             startCountdown();
         }
@@ -303,21 +320,17 @@ function startCountdownRoom() {
 }
 
 function startCountdown() {
+    console.log("dkhalllllllllllllllllllllllll");
+    
     clearGameTimers();
     gameState = 'countdown';
     countdownSeconds = 10;
 
-    broadcast(JSON.stringify({
-        type: 'countdown',
-        seconds: countdownSeconds
-    }));
+    broadcast(JSON.stringify({ type: 'countdown', seconds: countdownSeconds}));
 
     countdownTimer = setInterval(() => {
         countdownSeconds--;
-        broadcast(JSON.stringify({
-            type: 'countdown',
-            seconds: countdownSeconds
-        }));
+        broadcast(JSON.stringify({ type: 'countdown', seconds: countdownSeconds}));
 
         if (countdownSeconds <= 0) {
             clearInterval(countdownTimer);
@@ -330,13 +343,9 @@ function startCountdown() {
 function startGame() {
     gameState = 'playing';
     gameStarted = true;
-    broadcast(JSON.stringify({
-        type: 'gameStart',
-        board,
-        players,
-        bombs,
-        powerUps
-    }));
+    players.map(a => {
+        broadcast(JSON.stringify({ type: 'gameStart', board, players, bombs, powerUps, players }), a.id);
+    });
 }
 
 function clearGameTimers() {
@@ -461,7 +470,7 @@ function applyPowerUp(player, powerUp) {
             player.flameSize++;
             break;
         case 'speed':
-            player.speed = Math.min(player.speed + 0.5, 2); // Max speed 2x
+            player.speed = Math.min(player.speed + 0.5, 2);
             break;
     }
 }
@@ -498,10 +507,10 @@ function explodeBomb(bomb, player) {
     ];
 
     const directions = [
-        { dx: 0, dy: -1 }, // up
-        { dx: 0, dy: 1 },  // down
-        { dx: -1, dy: 0 }, // left
-        { dx: 1, dy: 0 }   // right
+        { dx: 0, dy: -1 },
+        { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 },
+        { dx: 1, dy: 0 }
     ];
 
     directions.forEach(dir => {
@@ -539,10 +548,8 @@ function explodeBomb(bomb, player) {
             hitPlayer.lives--;
             if (hitPlayer.lives <= 0) {
                 hitPlayer.alive = false;
-                // Drop power-up on death (bonus feature)
                 dropPowerUpOnDeath(hitPlayer);
             } else {
-                // Respawn player at starting position
                 const startPos = positions[players.indexOf(hitPlayer) % positions.length];
                 hitPlayer.x = startPos.x;
                 hitPlayer.y = startPos.y;
@@ -579,7 +586,6 @@ function spawnPowerUp(x, y) {
 }
 
 function dropPowerUpOnDeath(player) {
-    // Drop a random power-up at player's death location
     const powerUpTypes = ['bombs', 'flames', 'speed'];
     const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
 
@@ -614,11 +620,10 @@ function resetGame() {
     bombs = [];
     powerUps = [];
     gameState = 'waiting';
-    gameStarted = false; // Fixed: reset gameStarted flag
+    gameStarted = false;
     playerConnections.clear();
     clearGameTimers();
 
-    // Reset board
     board = [
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
         [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
@@ -636,7 +641,6 @@ function resetGame() {
     broadcast(JSON.stringify({ type: 'gameReset' }));
 }
 
-// Start the server
 const PORT = 8888;
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

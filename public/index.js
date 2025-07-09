@@ -378,6 +378,12 @@ const reducers = {
             socket.send(JSON.stringify({ type: 'leaveGame' }));
         }
         return state;
+    },
+    leaveRoom: (state) => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'leaveRoom' }));
+        }
+        return state;
     }
 };
 
@@ -456,7 +462,6 @@ function removeKeyboardControls() {
     }
 }
 
-// Animation and FPS handling
 function startGameLoop(emit) {
     function gameLoop(currentTime) {
         if (currentTime - lastFrameTime >= 1000) {
@@ -467,8 +472,7 @@ function startGameLoop(emit) {
         }
         frameCount++;
 
-        // Clear explosions after animation
-        if (Math.random() < 0.1) { // Clear explosions occasionally
+        if (Math.random() < 0.1) {
             emit('clearExplosions');
         }
 
@@ -627,77 +631,82 @@ function renderMenu(state, emit) {
 function renderWaiting(state, emit) {
     return CreateElement('div', { class: 'menu-container' }, [
         CreateElement('div', { class: 'menu-form' }, [
-            CreateElement('h1', { class: 'welcome-title' }, ['⏳ Waiting for Players...']),
-            CreateElement('div', { class: 'countdown-display' }, [
-                CreateElement('div', { class: 'countdown-number' }, [
-                    (state.countdownroom || 20).toString()
+            CreateElement('div', {}, [
+
+                CreateElement('h1', { class: 'welcome-title' }, ['⏳ Waiting for Players...']),
+                CreateElement('div', { class: 'countdown-display' }, [
+                    CreateElement('div', { class: 'countdown-number' }, [
+                        (state.countdownroom || 20).toString()
+                    ]),
+                ]),
+                CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
+                
+                CreateElement('div', { class: 'message-container' }, [
+                    state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+                ].filter(Boolean)),
+                
+                CreateElement('div', { class: 'players-list' }, [
+                    CreateElement('h3', {}, ['Players in lobby:'].filter(Boolean)),
+                    ...(state.players || []).map(player =>
+                        CreateElement('div', { class: 'player-item' }, [
+                            `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
+                        ].filter(Boolean))
+                    )
+                ].filter(Boolean)),
+                CreateElement('div', { class: 'loading-indicator' }, [
+                    CreateElement('div', { class: 'spinner' })
+                ]),
+                CreateElement('div', { class: 'button-group' }, [
+                    CreateElement('button', {
+                        class: 'btn btn-secondary',
+                        on: {
+                            click: () => {
+                                emit('resetGame');
+                                emit('leaveRoom');
+                            },
+                        }
+                    }, ['Back to Menu'])
                 ]),
             ]),
-            CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
-            
-            CreateElement('div', { class: 'message-container' }, [
-                state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
-            ].filter(Boolean)),
-            
-            CreateElement('div', { class: 'players-list' }, [
-                CreateElement('h3', {}, ['Players in lobby:'].filter(Boolean)),
-                ...(state.players || []).map(player =>
-                    CreateElement('div', { class: 'player-item' }, [
-                        `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
-                    ].filter(Boolean))
-                )
-            ].filter(Boolean)),
-            CreateElement('div', { class: 'loading-indicator' }, [
-                CreateElement('div', { class: 'spinner' })
-            ]),
-            CreateElement('div', { class: 'button-group' }, [
-                CreateElement('button', {
-                    class: 'btn btn-secondary',
-                    on: {
-                        click: () => {
-                            emit('resetGame');
-                            emit('leaveGame');
-                        },
-                    }
-                }, ['Back to Menu'])
-            ]),
 
-            renderChatMessages(state),
-
-            CreateElement('div', { class: 'chat-input-container' }, [
-                CreateElement('input', {
-                    type: 'text',
-                    placeholder: 'Type your message here...',
-                    maxlength: '20',
-                    on: {
-                        keydown: (e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const message = e.target.value.trim();
-                                if (message) {
-                                    emit('sendChatMessage', message);
-                                    e.target.value = '';
+            CreateElement('div', {}, [
+                renderChatMessages(state),
+    
+                CreateElement('div', { class: 'chat-input-container' }, [
+                    CreateElement('input', {
+                        type: 'text',
+                        placeholder: 'Type your message here...',
+                        maxlength: '20',
+                        on: {
+                            keydown: (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const message = e.target.value.trim();
+                                    if (message) {
+                                        emit('sendChatMessage', message);
+                                        e.target.value = '';
+                                    }
                                 }
                             }
                         }
-                    }
-                }),
-                CreateElement('button', {
-                    class: 'chat-send-btn',
-                    on: {
-                        click: (e) => {
-                            const input = e.target.parentElement.querySelector('input');
-                            const message = input.value.trim();
-                            if (message) {
-                                emit('sendChatMessage', message);
-                                input.value = '';
+                    }),
+                    CreateElement('button', {
+                        class: 'chat-send-btn',
+                        on: {
+                            click: (e) => {
+                                const input = e.target.parentElement.querySelector('input');
+                                const message = input.value.trim();
+                                if (message) {
+                                    emit('sendChatMessage', message);
+                                    input.value = '';
+                                }
                             }
                         }
-                    }
-                }, ['Send'])
+                    }, ['Send'])
+                ]),
+    
+                CreateElement('div', { class: 'chat-status' }, ['Connected • Ready to chat'])
             ]),
-
-            CreateElement('div', { class: 'chat-status' }, ['Connected • Ready to chat'])
         ])
     ]);
 }
