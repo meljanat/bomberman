@@ -247,7 +247,8 @@ const reducers = {
             case 'playerLeft':
                 return {
                     ...state,
-                    players: data.players
+                    players: data.players,
+                    statusMessage: `Waiting for players... (${data.players.length}/4)`,
                 };
 
             case 'countdown':
@@ -738,13 +739,11 @@ function renderGameTile(state, i, j) {
     if (cellValue === 2) tileClass += ' wall';
     else if (cellValue === 1) tileClass += ' block';
 
-    // Check for explosions
     const hasExplosion = state.explosions && state.explosions.some(expl => expl.x === j && expl.y === i);
     if (hasExplosion) tileClass += ' explosion';
 
     const children = [];
 
-    // Add power-ups
     state.powerUps.forEach(powerUp => {
         if (powerUp.x === j && powerUp.y === i) {
             children.push(CreateElement('div', {
@@ -754,7 +753,6 @@ function renderGameTile(state, i, j) {
         }
     });
 
-    // Add players
     state.players.forEach(player => {
         if (player.lives > 0 && player.x === j && player.y === i) {
             children.push(CreateElement('div', {
@@ -764,7 +762,6 @@ function renderGameTile(state, i, j) {
         }
     });
 
-    // Add bombs
     state.bombs.forEach(bomb => {
         if (bomb.x === j && bomb.y === i) {
             children.push(CreateElement('div', {
@@ -940,13 +937,11 @@ app.mount(document.getElementById('game-container'));
 
 window.appEmit = app.emit;
 
-// Auto-connect on load
 setTimeout(() => {
     console.log('Attempting initial connection to server...');
     window.appEmit('connectToServer');
 }, 2000);
 
-// Handle page visibility changes
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         stopGameLoop();
@@ -958,7 +953,6 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// Handle window unload
 window.addEventListener('beforeunload', () => {
     stopGameLoop();
     removeKeyboardControls();

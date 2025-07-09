@@ -141,12 +141,10 @@ wss.on('connection', (ws) => {
                         countdownTimer = null;
                     } players.map((p) => {
                         broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
-                        broadcast(JSON.stringify({ type: 'waiting', players }), p.id);
                     })
                 } else {
                     players.map((p) => {
                         broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
-                        broadcast(JSON.stringify({ type: 'waiting', players }), p.id);
                     });
                 }
             }
