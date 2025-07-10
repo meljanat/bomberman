@@ -615,7 +615,10 @@ function renderMenu(state, emit) {
                 CreateElement('button', {
                     class: 'btn btn-secondary',
                     on: {
-                        click: () => emit('updatePlayerName', '')
+                        click: () => {
+                            console.log("vvvvvvvvvvvvvvvvvvvvvvvvv"),
+                            emit('updatePlayerName', '')
+                        }
                     }
                 }, ['Clear']),
                 !state.connected && !state.connecting ? CreateElement('button', {

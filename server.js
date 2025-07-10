@@ -492,9 +492,12 @@ function handlePlaceBomb(player) {
 
     broadcast(JSON.stringify({ type: 'bombPlaced', bombs }));
 
+    setTimeout(() => {
+        explodeBomb(bomb);
+    }, 3000);
 }
 
-function explodeBomb(bomb, player) {
+function explodeBomb(bomb) {
     const bombIndex = bombs.findIndex(b => b === bomb);
     if (bombIndex === -1) return;
 
