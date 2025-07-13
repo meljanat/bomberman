@@ -313,15 +313,11 @@ const reducers = {
                 };
 
             case 'newMessage':
+                console.log([...(state.messages || []), data.message]);
+                
                 return {
                     ...state,
                     messages: [...(state.messages || []), data.message]
-                };
-
-            case 'messageHistory':
-                return {
-                    ...state,
-                    messages: data.messages || []
                 };
 
             case 'gameOver':
@@ -498,19 +494,19 @@ function renderChatMessages(state) {
     }
     console.log("mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", state);
 
-    // state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+    state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null;
 
-    // if (state.message.length > 20) {
-    //     console.log("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll");
+    if (state.message.length > 20) {
+        console.log("lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll");
 
-    //     // setTimeout(() => {
-    //     //     CreateElement('div', { class: 'chat-empty' }, ['Invalid message lenght']);
-    //     // }, 2000);
-    //     if (state.errorMessage) {
-    //         return CreateElement('div', { class: 'error-message' }, [state.errorMessage]);
-    //     }
-    //     return null;
-    // }
+        // setTimeout(() => {
+        //     CreateElement('div', { class: 'chat-empty' }, ['Invalid message lenght']);
+        // }, 2000);
+        if (state.errorMessage) {
+            return CreateElement('div', { class: 'error-message' }, [state.errorMessage]);
+        }
+        return null;
+    }
 
     return CreateElement('div', { class: 'chat-messages' },
         state.messages.map(msg =>

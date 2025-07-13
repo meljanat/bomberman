@@ -40,7 +40,7 @@ const server = http.createServer(async (req, res) => {
         });
         res.end(data);
     } catch (err) {
-        console.error('Error handling request:', err);
+        // console.error('Error handling request:', err);
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Internal Server Error');
     }
@@ -86,7 +86,7 @@ let gameStarted = false;
 let playerConnections = new Map();
 
 wss.on('connection', (ws) => {
-    // console.log('A new player connected.');
+    console.log('A new player connected.');
 
     ws.send(JSON.stringify({
         type: 'chatHistory',
@@ -96,7 +96,7 @@ wss.on('connection', (ws) => {
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-            // console.log('Received message:', data);
+            console.log('Received message:', data);
 
             if (data.type === 'start') {
                 handlePlayerJoin(ws, data.name);
@@ -121,6 +121,9 @@ wss.on('connection', (ws) => {
                 }
             } else if (data.type === 'message') {
                 const player = getPlayerByWebSocket(ws);
+                
+                console.log(data.message);
+                
                 if (player) {
                     handleChatMessage(player, data.message, ws);
                 }
@@ -135,10 +138,7 @@ wss.on('connection', (ws) => {
                         clearInterval(countdownTimerroom);
                         countdownTimerroom = null;
                     }
-                    if (countdownTimer) {
-                        clearInterval(countdownTimer);
-                        countdownTimer = null;
-                    } players.map((p) => {
+                    players.map((p) => {
                         broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
                     })
                 } else {
@@ -148,7 +148,7 @@ wss.on('connection', (ws) => {
                 }
             }
         } catch (error) {
-            console.error('Error parsing message:', error);
+            // console.error('Error parsing message:', error);
         }
     });
 
@@ -180,7 +180,7 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
+        // console.error('WebSocket error:', error);
     });
 });
 
@@ -206,7 +206,7 @@ function handleChatMessage(player, messageText, ws) {
         messages.shift()
     }
 
-    console.log("---------++++++++++----------", messages, player.name, messages.length);
+    // console.log("---------++++++++++----------", messages, player.name, messages.length);
     
 
     broadcast(JSON.stringify({
@@ -248,17 +248,12 @@ function handlePlayerJoin(ws, name) {
         bombs: 0,
         flameSize: 1,
         speed: 1,
-        powerUps: {
-            bombPass: false,
-            blockPass: false,
-            detonator: false
-        }
     };
 
     players.push(player);
     playerConnections.set(playerId, ws);
 
-    // console.log(`Player ${name} joined. Total players: ${players.length}`);
+    console.log(`Player ${name} joined. Total players: ${players.length}`);
 
     if (players.length === 1) {
         addBlocks();
@@ -311,7 +306,7 @@ function startCountdownRoom() {
         });
 
         if (twenty_sec <= 0) {
-            // console.log("checkkkkkkkkkkkkkkkkkkkkkk");
+            console.log("checkkkkkkkkkkkkkkkkkkkkkk");
             
             clearInterval(countdownTimerroom);
             startCountdown();
@@ -320,7 +315,7 @@ function startCountdownRoom() {
 }
 
 function startCountdown() {
-    console.log("dkhalllllllllllllllllllllllll");
+    // console.log("dkhalllllllllllllllllllllllll");
     
     clearGameTimers();
     gameState = 'countdown';
@@ -331,7 +326,7 @@ function startCountdown() {
     countdownTimer = setInterval(() => {
         ten_sec--;
         broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}));
-        console.log(players.length);
+        // console.log(players.length);
         
         if (players.length < 2) {
             checkGameOver()
@@ -413,7 +408,7 @@ function checkName(name) {
 }
 
 function broadcast(message, id) {
-    // console.log('Broadcasting:', message);
+    console.log('Broadcasting:', message);
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN && (!id || playerConnections.get(id) == client)) {
             client.send(message);
@@ -606,7 +601,7 @@ function dropPowerUpOnDeath(player) {
 
 function checkGameOver() {
     const alivePlayers = players.filter(p => p.alive);
-    console.log(players.length, "----++++++");
+    // console.log(players.length, "----++++++");
     
     if (alivePlayers.length <= 1) {
         gameState = 'ended';
@@ -650,5 +645,5 @@ function resetGame() {
 
 const PORT = 8888;
 server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    // console.log(`Server is running on http://localhost:${PORT}`);
 });
