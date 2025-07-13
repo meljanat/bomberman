@@ -51,14 +51,13 @@ const wss = new WebSocket.Server({ server });
 let players = [];
 let bombs = [];
 let powerUps = [];
-let chatMessages = [];
 let gridSize = 11;
 let gameState = 'waiting'; // 'waiting', 'countdown', 'playing', 'ended'
 let gameStartTimer = null;
 let countdownTimer = null;
 let countdownTimerroom = null;
-let countdownSeconds = 10;
-let countdownSecondsroom = 20;
+let ten_sec = 10;
+let twenty_sec = 20;
 
 let messages = [];
 let board = [
@@ -91,7 +90,7 @@ wss.on('connection', (ws) => {
 
     ws.send(JSON.stringify({
         type: 'chatHistory',
-        messages: chatMessages.slice(-20)
+        messages: messages.slice(-10)
     }));
 
     ws.on('message', (message) => {
@@ -164,7 +163,7 @@ wss.on('connection', (ws) => {
             })
 
             if (players.length < 2) {
-                if (countdownSecondsroom <= 0) {
+                if (twenty_sec <= 0) {
                     return checkGameOver()
                 }
                 clearGameTimers();
@@ -197,16 +196,18 @@ function handleChatMessage(player, messageText, ws) {
     }
 
     const message = {
-        id: Date.now(),
-        playerId: player.id,
         sender: player.name,
         text: messageText,
     };
 
     messages.push(message);
-    if (messages.length > 20) {
-        messages.shift();
+
+    if (messages.length > 10) {
+        messages.shift()
     }
+
+    console.log("---------++++++++++----------", messages, player.name, messages.length);
+    
 
     broadcast(JSON.stringify({
         type: 'newMessage',
@@ -285,31 +286,31 @@ function handlePlayerJoin(ws, name) {
         board,
         bombs,
         powerUps,
-        countdown: countdownSeconds
+        countdown: ten_sec
     }));
 }
 
 function startCountdownRoom() {
     clearGameTimers();
     gameState = 'waiting';
-    countdownSecondsroom = 20;
+    twenty_sec = 20;
 
     // broadcast(JSON.stringify({
     //     type: 'waiting',
-    //     secondsroom: countdownSecondsroom,
-    //     countdownroom: countdownSecondsroom,
+    //     secondsroom: twenty_sec,
+    //     countdownroom: twenty_sec,
     // }));
     players.map(a => {
-        broadcast(JSON.stringify({ type: 'waiting', secondsroom: countdownSecondsroom, countdownroom: countdownSecondsroom, players }), a.id);
+        broadcast(JSON.stringify({ type: 'waiting', secondsroom: twenty_sec, countdownroom: twenty_sec, players }), a.id);
     });
 
     countdownTimerroom = setInterval(() => {
-        countdownSecondsroom--;
+        twenty_sec--;
         players.map(a => {
-            broadcast(JSON.stringify({ type: 'waiting', secondsroom: countdownSecondsroom, countdownroom: countdownSecondsroom, players }), a.id);
+            broadcast(JSON.stringify({ type: 'waiting', secondsroom: twenty_sec, countdownroom: twenty_sec, players }), a.id);
         });
 
-        if (countdownSecondsroom <= 0) {
+        if (twenty_sec <= 0) {
             // console.log("checkkkkkkkkkkkkkkkkkkkkkk");
             
             clearInterval(countdownTimerroom);
@@ -323,20 +324,20 @@ function startCountdown() {
     
     clearGameTimers();
     gameState = 'countdown';
-    countdownSeconds = 10;
+    ten_sec = 10;
 
-    broadcast(JSON.stringify({ type: 'countdown', seconds: countdownSeconds}));
+    broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}));
 
     countdownTimer = setInterval(() => {
-        countdownSeconds--;
-        broadcast(JSON.stringify({ type: 'countdown', seconds: countdownSeconds}));
+        ten_sec--;
+        broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}));
         console.log(players.length);
         
         if (players.length < 2) {
             checkGameOver()
             return 
         }
-        if (countdownSeconds <= 0) {
+        if (ten_sec <= 0) {
             clearInterval(countdownTimer);
             gameStarted = true
             startGame();

@@ -862,7 +862,7 @@ function renderGame(state, emit) {
 
                 CreateElement('div', { class: 'controls-help' }, [
                     CreateElement('h4', {}, ['Controls']),
-                    CreateElement('p', {}, ['Arrow Keys / WASD: Move']),
+                    CreateElement('p', {}, ['Arrow Keys / ZQSD: Move']),
                     CreateElement('p', {}, ['Space: Place Bomb']),
                     CreateElement('p', {}, ['C: Toggle Chat'])
                 ])
