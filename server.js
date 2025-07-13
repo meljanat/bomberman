@@ -87,7 +87,7 @@ let gameStarted = false;
 let playerConnections = new Map();
 
 wss.on('connection', (ws) => {
-    console.log('A new player connected.');
+    // console.log('A new player connected.');
 
     ws.send(JSON.stringify({
         type: 'chatHistory',
@@ -97,7 +97,7 @@ wss.on('connection', (ws) => {
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-            console.log('Received message:', data);
+            // console.log('Received message:', data);
 
             if (data.type === 'start') {
                 handlePlayerJoin(ws, data.name);
@@ -126,12 +126,12 @@ wss.on('connection', (ws) => {
                     handleChatMessage(player, data.message, ws);
                 }
             } else if (data.type === 'leaveRoom') {
-                console.log("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo");
+                // console.log("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo");
                 const player = getPlayerByWebSocket(ws);
                 playerConnections.delete(player.id);
                 players = players.filter(a => a.id != player.id);
                 if (players.length < 2) {
-                    console.log(players, "dddddddddddddddddddddddddddddddddddd");
+                    // console.log(players, "dddddddddddddddddddddddddddddddddddd");
                     if (countdownTimerroom) {
                         clearInterval(countdownTimerroom);
                         countdownTimerroom = null;
@@ -154,7 +154,7 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        console.log('A player disconnected.');
+        // console.log('A player disconnected.');
         let player = getPlayerByWebSocket(ws);
         if (player) {
             players = players.filter((p) => p.id !== player.id);
@@ -164,15 +164,17 @@ wss.on('connection', (ws) => {
             })
 
             if (players.length < 2) {
+                if (countdownSecondsroom <= 0) {
+                    return checkGameOver()
+                }
                 clearGameTimers();
                 gameState = 'waiting';
                 players.map((p) => {
-
                     broadcast(JSON.stringify({ type: 'gameState', state: gameState }), p.id);
                 })
             }
 
-            if (gameState === 'playing') {
+            if (gameState !== 'playing') {
                 checkGameOver();
             }
         }
@@ -199,7 +201,6 @@ function handleChatMessage(player, messageText, ws) {
         playerId: player.id,
         sender: player.name,
         text: messageText,
-        timestamp: Date.now()
     };
 
     messages.push(message);
@@ -256,7 +257,7 @@ function handlePlayerJoin(ws, name) {
     players.push(player);
     playerConnections.set(playerId, ws);
 
-    console.log(`Player ${name} joined. Total players: ${players.length}`);
+    // console.log(`Player ${name} joined. Total players: ${players.length}`);
 
     if (players.length === 1) {
         addBlocks();
@@ -309,7 +310,7 @@ function startCountdownRoom() {
         });
 
         if (countdownSecondsroom <= 0) {
-            console.log("checkkkkkkkkkkkkkkkkkkkkkk");
+            // console.log("checkkkkkkkkkkkkkkkkkkkkkk");
             
             clearInterval(countdownTimerroom);
             startCountdown();
@@ -329,7 +330,12 @@ function startCountdown() {
     countdownTimer = setInterval(() => {
         countdownSeconds--;
         broadcast(JSON.stringify({ type: 'countdown', seconds: countdownSeconds}));
-
+        console.log(players.length);
+        
+        if (players.length < 2) {
+            checkGameOver()
+            return 
+        }
         if (countdownSeconds <= 0) {
             clearInterval(countdownTimer);
             gameStarted = true
@@ -406,7 +412,7 @@ function checkName(name) {
 }
 
 function broadcast(message, id) {
-    console.log('Broadcasting:', message);
+    // console.log('Broadcasting:', message);
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN && (!id || playerConnections.get(id) == client)) {
             client.send(message);
@@ -484,7 +490,6 @@ function handlePlaceBomb(player) {
         x: player.x,
         y: player.y,
         playerId: player.id,
-        timestamp: Date.now(),
         flameSize: player.flameSize,
     };
 
@@ -577,7 +582,6 @@ function spawnPowerUp(x, y) {
     const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
 
     const powerUp = {
-        id: Date.now() + Math.random(),
         x: x,
         y: y,
         type: type
@@ -591,7 +595,6 @@ function dropPowerUpOnDeath(player) {
     const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
 
     const powerUp = {
-        id: Date.now() + Math.random(),
         x: player.x,
         y: player.y,
         type: type
@@ -602,6 +605,8 @@ function dropPowerUpOnDeath(player) {
 
 function checkGameOver() {
     const alivePlayers = players.filter(p => p.alive);
+    console.log(players.length, "----++++++");
+    
     if (alivePlayers.length <= 1) {
         gameState = 'ended';
         const winner = alivePlayers.length === 1 ? alivePlayers[0] : null;
@@ -609,10 +614,10 @@ function checkGameOver() {
             type: 'gameOver',
             winner: winner
         }));
-
+        
         setTimeout(() => {
             resetGame();
-        }, 10000);
+        }, 5000);
     }
 }
 

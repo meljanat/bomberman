@@ -412,8 +412,8 @@ function setupKeyboardControls(emit) {
 
         switch (event.key) {
             case 'ArrowUp':
-            case 'w':
-            case 'W':
+            case 'z':
+            case 'Z':
                 direction = 'up';
                 break;
             case 'ArrowDown':
@@ -422,8 +422,8 @@ function setupKeyboardControls(emit) {
                 direction = 'down';
                 break;
             case 'ArrowLeft':
-            case 'a':
-            case 'A':
+            case 'q':
+            case 'Q':
                 direction = 'left';
                 break;
             case 'ArrowRight':
