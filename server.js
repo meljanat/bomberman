@@ -120,7 +120,11 @@ wss.on('connection', (ws) => {
                     }
                 }
             } else if (data.type === 'message') {
+                console.log(data);
+                
+                
                 const player = getPlayerByWebSocket(ws);
+
                 if (player) {
                     handleChatMessage(player, data.message, ws);
                 }
@@ -180,7 +184,7 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
+        //console.error('WebSocket error:', error);
     });
 });
 
@@ -206,7 +210,7 @@ function handleChatMessage(player, messageText, ws) {
         messages.shift()
     }
 
-    console.log("---------++++++++++----------", messages, player.name, messages.length);
+    console.log("---------++++++++++----------", message, player.name);
     
 
     broadcast(JSON.stringify({
@@ -320,8 +324,6 @@ function startCountdownRoom() {
 }
 
 function startCountdown() {
-    console.log("dkhalllllllllllllllllllllllll");
-    
     clearGameTimers();
     gameState = 'countdown';
     ten_sec = 10;
@@ -331,7 +333,7 @@ function startCountdown() {
     countdownTimer = setInterval(() => {
         ten_sec--;
         broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}));
-        console.log(players.length);
+        //console.log(players.length);
         
         if (players.length < 2) {
             checkGameOver()
@@ -606,7 +608,7 @@ function dropPowerUpOnDeath(player) {
 
 function checkGameOver() {
     const alivePlayers = players.filter(p => p.alive);
-    console.log(players.length, "----++++++");
+    //console.log(players.length, "----++++++");
     
     if (alivePlayers.length <= 1) {
         gameState = 'ended';
