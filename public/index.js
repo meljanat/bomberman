@@ -53,7 +53,7 @@ const reducers = {
     sendChatMessage: (state, message) => {
         const messageToSend = message || state.chatInput;
         // console.log("====>>>>> ", state,"<<<<<=====",messageToSend );
-        
+
         if (socket && socket.readyState === WebSocket.OPEN && messageToSend.trim()) {
             socket.send(JSON.stringify({
                 type: 'message',
@@ -496,11 +496,11 @@ function stopGameLoop() {
 
 function renderChatMessages(state) {
 
-    console.log(state);
-    
+    //console.log(state);
+
 
     if (!state.messages || state.messages.length === 0) {
-       
+
         return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
     }
 
@@ -540,6 +540,7 @@ function renderChat(state, emit) {
                             const message = e.target.value.trim();
                             if (message) {
                                 emit('sendChatMessage', message);
+                                e.target.value = '';
                             }
                         }
                     }
@@ -548,14 +549,16 @@ function renderChat(state, emit) {
             CreateElement('button', {
                 class: 'chat-send-btn',
                 on: {
-                    click: () => {
-                        const message = state.chatInput.trim();
+                    click: (e) => {
+                        const input = e.target.parentElement.querySelector('input');
+                        const message = input.value.trim();
                         if (message) {
                             emit('sendChatMessage', message);
+                            input.value = '';
                         }
                     }
-                }
-            }, ['Send'])
+                    }
+                }, ['Send'])
         ])
     ]);
 }
@@ -636,11 +639,11 @@ function renderWaiting(state, emit) {
                     ]),
                 ]),
                 CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
-                
+
                 CreateElement('div', { class: 'message-container' }, [
                     state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
                 ].filter(Boolean)),
-                
+
                 CreateElement('div', { class: 'players-list' }, [
                     CreateElement('h3', {}, ['Players in lobby:'].filter(Boolean)),
                     ...(state.players || []).map(player =>
@@ -667,7 +670,7 @@ function renderWaiting(state, emit) {
 
             CreateElement('div', {}, [
                 renderChatMessages(state),
-    
+
                 CreateElement('div', { class: 'chat-input-container' }, [
                     CreateElement('input', {
                         type: 'text',
@@ -692,6 +695,11 @@ function renderWaiting(state, emit) {
                             click: (e) => {
                                 const input = e.target.parentElement.querySelector('input');
                                 const message = input.value.trim();
+                                
+                                console.log(input);
+                                console.log(message);
+                                
+                                
                                 if (message) {
                                     emit('sendChatMessage', message);
                                     input.value = '';
@@ -700,7 +708,7 @@ function renderWaiting(state, emit) {
                         }
                     }, ['Send'])
                 ]),
-    
+
                 CreateElement('div', { class: 'chat-status' }, ['Connected • Ready to chat'])
             ]),
         ])
