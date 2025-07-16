@@ -105,6 +105,9 @@ wss.on('connection', (ws) => {
                 if (player && gameState === 'playing') {
                     handlePlayerMove(player, data.direction);
                 }
+
+                console.log("=====> : ", players);
+                
             } else if (data.type === 'placeBomb') {
                 const player = getPlayerByWebSocket(ws);
                 if (player && gameState === 'playing') {
@@ -112,6 +115,7 @@ wss.on('connection', (ws) => {
                 }
             } else if (data.type === 'leaveGame') {
                 const player = getPlayerByWebSocket(ws);
+                let pl_pos = player.position 
                 if (player) {
                     playerConnections.delete(player.id);
                     players = players.filter(a => a.id != player.id);
@@ -119,6 +123,17 @@ wss.on('connection', (ws) => {
                         checkGameOver();
                     }
                 }
+
+                for (play of players) {
+
+                    console.log(play.position, "===>>>>", pl_pos);
+                    
+
+                    if (play.position > pl_pos) {
+                        play.position -= 1
+                    }
+                }
+                
             } else if (data.type === 'message') {
                 console.log(data);
                 
@@ -131,6 +146,9 @@ wss.on('connection', (ws) => {
             } else if (data.type === 'leaveRoom') {
                 // console.log("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo");
                 const player = getPlayerByWebSocket(ws);
+
+                let pl_pos = player.position 
+
                 playerConnections.delete(player.id);
                 players = players.filter(a => a.id != player.id);
                 if (players.length < 2) {
@@ -149,7 +167,25 @@ wss.on('connection', (ws) => {
                     players.map((p) => {
                         broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
                     });
+
                 }
+
+                for (play of players) {
+
+                    console.log(play.position, "<<<<===>>>>", pl_pos);
+                    
+
+                    if (play.position > pl_pos) {
+                        play.position -= 1
+                        // console.log(play);
+                        const playerPosition = positions[play.position];
+                        
+                        play.x = playerPosition.x
+
+                        play.y = playerPosition.y
+                    }
+                }
+
             }
         } catch (error) {
             console.error('Error parsing message:', error);
@@ -252,12 +288,10 @@ function handlePlayerJoin(ws, name) {
         bombs: 0,
         flameSize: 1,
         speed: 1,
-        powerUps: {
-            bombPass: false,
-            blockPass: false,
-            detonator: false
-        }
+        position : players.length
     };
+
+    
 
     players.push(player);
     playerConnections.set(playerId, ws);
