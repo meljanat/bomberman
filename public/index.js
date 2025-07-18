@@ -1,400 +1,725 @@
-import { CreateElement } from './src/h.js'
-import { createApp } from './src/app.js'
+import { createElement, render, createStateManager } from './src/framework.js';
 
 let socket = null;
+let animationId = null;
+let lastFrameTime = 0;
+let frameCount = 0;
+let fpsDisplay = 0;
 
 const initialState = {
-    screen: 'menu', // 'menu', 'waiting', 'game', 'gameOver'
+    screen: 'menu',
     playerName: '',
     errorMessage: '',
     statusMessage: '',
     players: [],
     bombs: [],
+    powerUps: [],
     board: [],
     gridSize: 11,
     gameWinner: null,
     connected: false,
-    connecting: false
+    connecting: false,
+    messages: [],
+    showChat: false,
+    countdown: 0,
+    countdownroom: 0,
+    isCountingDown: false,
+    isCountingDownRoom: false,
+    explosions: [],
+    chatInput: '',
+    currentPlayer: null,
+    fps: 0
 };
 
-const reducers = {
-    updatePlayerName: (state, name) => ({
-        ...state,
-        playerName: name,
-        errorMessage: ''
-    }),
+const appStateManager = createStateManager(initialState);
+let currentVNode = null;
+const appContainer = document.getElementById('game-container');
 
-    setError: (state, message) => ({
-        ...state,
-        errorMessage: message,
-        connecting: false
-    }),
+const appEmit = (actionType, payload) => {
+    const currentState = appStateManager.getState();
+    let newState = { ...currentState };
 
-    setStatus: (state, message) => ({
-        ...state,
-        statusMessage: message
-    }),
-
-    clearMessages: (state) => ({
-        ...state,
-        errorMessage: '',
-        statusMessage: ''
-    }),
-
-    setConnecting: (state, connecting) => ({
-        ...state,
-        connecting: connecting
-    }),
-
-    connectToServer: (state) => {
-        console.log('Attempting to connect to server...');
-        
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            console.log('Already connected');
-            return { ...state, connected: true };
-        }
-
-        if (socket && socket.readyState === WebSocket.CONNECTING) {
-            console.log('Already connecting');
-            return { ...state, connecting: true };
-        }
-
-        try {
-            // Use the correct port from server.js (8888)
-            socket = new WebSocket('ws://localhost:8888');
-
-            socket.addEventListener('open', () => {
-                console.log('Connected to server');
-                if (window.appEmit) {
-                    window.appEmit('connectionEstablished');
-                }
-            });
-
-            socket.addEventListener('message', (event) => {
-                const data = JSON.parse(event.data);
-                console.log('Received message:', data);
-                if (window.appEmit) {
-                    window.appEmit('handleServerMessage', data);
-                }
-            });
-
-            socket.addEventListener('close', () => {
-                console.log('Connection closed');
-                if (window.appEmit) {
-                    window.appEmit('connectionLost');
-                }
-            });
-
-            socket.addEventListener('error', (error) => {
-                console.error('WebSocket error:', error);
-                if (window.appEmit) {
-                    window.appEmit('setError', 'Failed to connect to server');
-                }
-            });
-
-            return { ...state, connecting: true, errorMessage: '' };
-        } catch (error) {
-            console.error('Error creating WebSocket:', error);
-            return { ...state, errorMessage: 'Failed to connect to server', connecting: false };
-        }
-    },
-
-    connectionEstablished: (state) => ({
-        ...state,
-        connected: true,
-        connecting: false,
-        errorMessage: '',
-        statusMessage: 'Connected to server!'
-    }),
-
-    connectionLost: (state) => ({
-        ...state,
-        connected: false,
-        connecting: false,
-        screen: 'menu',
-        errorMessage: 'Connection lost. Please try again.',
-        statusMessage: ''
-    }),
-
-    startGame: (state) => {
-        console.log('Starting game with name:', state.playerName);
-        
-        if (!state.playerName.trim()) {
-            return {
-                ...state,
-                errorMessage: 'Please enter a name'
+    switch (actionType) {
+        case 'updatePlayerName':
+            newState = { ...currentState, playerName: payload, errorMessage: '' };
+            break;
+        case 'updateChatInput':
+            newState = { ...currentState, chatInput: payload };
+            break;
+        case 'toggleChat':
+            newState = { ...currentState, showChat: !currentState.showChat };
+            break;
+        case 'sendChatMessage':
+            const messageToSend = payload || currentState.chatInput;
+            if (socket && socket.readyState === WebSocket.OPEN && messageToSend.trim()) {
+                socket.send(JSON.stringify({
+                    type: 'message',
+                    message: messageToSend.trim()
+                }));
+                newState = { ...currentState, chatInput: '' };
+            }
+            break;
+        case 'setError':
+            newState = { ...currentState, errorMessage: payload, connecting: false };
+            break;
+        case 'setStatus':
+            newState = { ...currentState, statusMessage: payload };
+            break;
+        case 'clearMessages':
+            newState = { ...currentState, errorMessage: '', statusMessage: '' };
+            break;
+        case 'setConnecting':
+            newState = { ...currentState, connecting: payload };
+            break;
+        case 'updateFPS':
+            newState = { ...currentState, fps: payload };
+            break;
+        case 'connectToServer':
+            console.log('Attempting to connect to server...');
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                console.log('Already connected');
+                newState = { ...currentState, connected: true };
+                break;
+            }
+            if (socket && socket.readyState === WebSocket.CONNECTING) {
+                console.log('Already connecting');
+                newState = { ...currentState, connecting: true };
+                break;
+            }
+            try {
+                socket = new WebSocket('ws://localhost:8888');
+                socket.addEventListener('open', () => {
+                    console.log('Connected to server');
+                    appEmit('connectionEstablished');
+                });
+                socket.addEventListener('message', (event) => {
+                    const data = JSON.parse(event.data);
+                    appEmit('handleServerMessage', data);
+                });
+                socket.addEventListener('close', () => {
+                    console.log('Connection closed');
+                    appEmit('connectionLost');
+                });
+                socket.addEventListener('error', (error) => {
+                    console.error('WebSocket error:', error);
+                    appEmit('setError', 'Failed to connect to server');
+                });
+                newState = { ...currentState, connecting: true, errorMessage: '' };
+            } catch (error) {
+                console.error('Error creating WebSocket:', error);
+                newState = { ...currentState, errorMessage: 'Failed to connect to server', connecting: false };
+            }
+            break;
+        case 'connectionEstablished':
+            newState = { ...currentState, connected: true, connecting: false, errorMessage: '', statusMessage: 'Connected to server!' };
+            break;
+        case 'connectionLost':
+            newState = { ...currentState, connected: false, connecting: false, screen: 'menu', errorMessage: 'Connection lost. Please try again.', statusMessage: '', currentPlayer: null, messages: [] };
+            break;
+        case 'startGame':
+            console.log('Starting game with name:', currentState.playerName);
+            if (!currentState.playerName.trim()) {
+                newState = { ...currentState, errorMessage: 'Please enter a name' };
+                break;
+            }
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'start', name: currentState.playerName.trim() }));
+                newState = { ...currentState, errorMessage: '', statusMessage: 'Joining game...' };
+            } else {
+                console.error('Socket not ready, state:', socket ? socket.readyState : 'no socket');
+                newState = { ...currentState, errorMessage: 'Not connected to server. Please wait and try again.' };
+            }
+            break;
+        case 'handleServerMessage':
+            const data = payload;
+            switch (data.type) {
+                case 'error':
+                    newState = { ...currentState, errorMessage: data.message, statusMessage: '' };
+                    break;
+                case 'gameState':
+                    const updatedGameState = {
+                        ...currentState,
+                        players: data.players || currentState.players,
+                        bombs: data.bombs || currentState.bombs,
+                        powerUps: data.powerUps || currentState.powerUps,
+                        board: data.board || currentState.board,
+                        statusMessage: '',
+                        errorMessage: ''
+                    };
+                    if (data.players) {
+                        const currentPlayer = data.players.find(p => p.name === currentState.playerName);
+                        updatedGameState.currentPlayer = currentPlayer;
+                    }
+                    if (data.state === 'waiting') {
+                        updatedGameState.screen = 'waiting';
+                        updatedGameState.isCountingDownRoom = true;
+                        updatedGameState.countdownroom = data.secondsroom || 20;
+                        updatedGameState.statusMessage = `Waiting for players... (${data.players.length}/4)`;
+                    } else if (data.state === 'countdown') {
+                        updatedGameState.screen = 'countdown';
+                        updatedGameState.isCountingDownRoom = false;
+                        updatedGameState.isCountingDown = true;
+                        updatedGameState.countdown = data.countdown || 10;
+                    } else if (data.state === 'playing') {
+                        updatedGameState.screen = 'game';
+                        updatedGameState.isCountingDown = false;
+                    }
+                    newState = updatedGameState;
+                    break;
+                case 'playerJoined':
+                    newState = {
+                        ...currentState,
+                        players: data.players,
+                        screen: 'waiting',
+                        isCountingDownRoom: true,
+                        countdownroom: data.secondsroom,
+                        statusMessage: `Waiting for players... (${data.players.length}/4)`,
+                        currentPlayer: data.players.find(p => p.name === currentState.playerName)
+                    };
+                    break;
+                case 'playerLeft':
+                    newState = {
+                        ...currentState,
+                        players: data.players,
+                        statusMessage: `Waiting for players... (${data.players.length}/4)`,
+                    };
+                    break;
+                case 'countdown':
+                    newState = {
+                        ...currentState,
+                        screen: 'countdown',
+                        isCountingDown: true,
+                        countdown: data.seconds
+                    };
+                    break;
+                case 'waiting':
+                    newState = {
+                        ...currentState,
+                        screen: 'waiting',
+                        isCountingDownRoom: true,
+                        countdownroom: data.secondsroom || data.countdownroom || 20,
+                        statusMessage: `Waiting for players... (${currentState.players.length}/4)`
+                    };
+                    break;
+                case 'gameStart':
+                    newState = {
+                        ...currentState,
+                        screen: 'game',
+                        isCountingDown: false,
+                        players: data.players,
+                        bombs: data.bombs,
+                        powerUps: data.powerUps,
+                        board: data.board,
+                        statusMessage: 'Game started!'
+                    };
+                    break;
+                case 'playerMoved':
+                    newState = {
+                        ...currentState,
+                        players: data.players,
+                        currentPlayer: data.players.find(p => p.name === currentState.playerName)
+                    };
+                    break;
+                case 'bombPlaced':
+                    newState = { ...currentState, bombs: data.bombs };
+                    break;
+                case 'bombExploded':
+                    newState = {
+                        ...currentState,
+                        players: data.players,
+                        bombs: data.bombs,
+                        board: data.board,
+                        powerUps: data.powerUps,
+                        explosions: data.explosions || [],
+                        currentPlayer: data.players.find(p => p.name === currentState.playerName)
+                    };
+                    setTimeout(() => appEmit('clearExplosions'), 500);
+                    break;
+                case 'powerUpCollected':
+                    newState = {
+                        ...currentState,
+                        players: data.players,
+                        powerUps: data.powerUps,
+                        currentPlayer: data.players.find(p => p.name === currentState.playerName)
+                    };
+                    break;
+                case 'newMessage':
+                    newState = {
+                        ...currentState,
+                        messages: [...(currentState.messages || []), data.message]
+                    };
+                    break;
+                case 'messageHistory':
+                    newState = { ...currentState, messages: data.messages || [] };
+                    break;
+                case 'gameOver':
+                    newState = {
+                        ...currentState,
+                        screen: 'gameOver',
+                        gameWinner: data.winner
+                    };
+                    break;
+                case 'gameReset':
+                    newState = {
+                        ...initialState,
+                        connected: currentState.connected,
+                        playerName: currentState.playerName
+                    };
+                    break;
+                case 'chatHistory':
+                    newState = { ...currentState, messages: data.messages || [] };
+                    break;
+            }
+            break;
+        case 'sendMove':
+            if (socket && socket.readyState === WebSocket.OPEN && currentState.screen === 'game') {
+                socket.send(JSON.stringify({ type: 'move', direction: payload }));
+            }
+            break;
+        case 'placeBomb':
+            if (socket && socket.readyState === WebSocket.OPEN && currentState.screen === 'game') {
+                socket.send(JSON.stringify({ type: 'placeBomb' }));
+            }
+            break;
+        case 'clearExplosions':
+            newState = { ...currentState, explosions: [] };
+            break;
+        case 'resetGame':
+            newState = {
+                ...initialState,
+                connected: currentState.connected,
+                messages: []
             };
-        }
-
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: 'start', name: state.playerName.trim() }));
-            return {
-                ...state,
-                errorMessage: '',
-                statusMessage: 'Joining game...'
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'resetGameRequest' }));
+            }
+            break;
+        case 'leaveGame':
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'leaveGame' }));
+            }
+            newState = {
+                ...initialState,
+                connected: currentState.connected,
+                playerName: currentState.playerName,
+                messages: []
             };
-        } else {
-            console.error('Socket not ready, state:', socket ? socket.readyState : 'no socket');
-            return {
-                ...state,
-                errorMessage: 'Not connected to server. Please wait and try again.'
+            break;
+        case 'leaveRoom':
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'leaveRoom' }));
+            }
+            newState = {
+                ...initialState,
+                connected: currentState.connected,
+                playerName: currentState.playerName,
+                messages: []
             };
-        }
-    },
-
-    handleServerMessage: (state, data) => {
-        console.log('Handling server message:', data);
-        switch (data.type) {
-            case 'error':
-                return {
-                    ...state,
-                    errorMessage: data.message,
-                    statusMessage: ''
-                };
-
-            case 'waiting':
-                return {
-                    ...state,
-                    screen: 'waiting',
-                    statusMessage: data.message,
-                    errorMessage: ''
-                };
-
-            case 'init':
-                return {
-                    ...state,
-                    screen: 'game',
-                    players: data.players,
-                    bombs: data.bombs,
-                    board: data.board,
-                    statusMessage: '',
-                    errorMessage: ''
-                };
-
-            case 'playerJoined':
-            case 'playerLeft':
-                return {
-                    ...state,
-                    players: data.players
-                };
-
-            case 'playerMoved':
-                return {
-                    ...state,
-                    players: data.players
-                };
-
-            case 'bombPlaced':
-                return {
-                    ...state,
-                    bombs: data.bombs
-                };
-
-            case 'bombExploded':
-                return {
-                    ...state,
-                    players: data.players,
-                    bombs: data.bombs,
-                    board: data.board
-                };
-
-            case 'gameOver':
-                return {
-                    ...state,
-                    screen: 'gameOver',
-                    gameWinner: data.winner
-                };
-
-            default:
-                return state;
-        }
-    },
-
-    sendMove: (state, direction) => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: 'move', direction }));
-        }
-        return state;
-    },
-
-    placeBomb: (state) => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: 'placeBomb' }));
-        }
-        return state;
-    },
-
-    resetGame: (state) => ({
-        ...initialState,
-        connected: state.connected
-    })
+            break;
+        default:
+            console.warn('Unknown action type:', actionType);
+            return;
+    }
+    appStateManager.setState(newState);
 };
 
-// Keyboard handling
 let keyHandler = null;
+let keysPressed = new Set();
 
-function setupKeyboardControls(emit) {
+const keyUpHandler = (event) => {
+    keysPressed.delete(event.key);
+};
+
+function setupKeyboardControls(emitFn) {
     if (keyHandler) {
         document.removeEventListener('keydown', keyHandler);
+        document.removeEventListener('keyup', keyUpHandler);
     }
 
     keyHandler = (event) => {
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+            return;
+        }
+
+        if (keysPressed.has(event.key)) return;
+        keysPressed.add(event.key);
+
         let direction = null;
 
         switch (event.key) {
             case 'ArrowUp':
+            case 'w':
+            case 'W':
                 direction = 'up';
                 break;
             case 'ArrowDown':
+            case 's':
+            case 'S':
                 direction = 'down';
                 break;
             case 'ArrowLeft':
+            case 'a':
+            case 'A':
                 direction = 'left';
                 break;
             case 'ArrowRight':
+            case 'd':
+            case 'D':
                 direction = 'right';
                 break;
             case ' ':
                 event.preventDefault();
-                emit('placeBomb');
+                emitFn('placeBomb');
+                return;
+            case 'c':
+            case 'C':
+                event.preventDefault();
+                emitFn('toggleChat');
                 return;
         }
 
         if (direction) {
             event.preventDefault();
-            emit('sendMove', direction);
+            emitFn('sendMove', direction);
         }
     };
 
+    window.keyUpHandler = keyUpHandler;
     document.addEventListener('keydown', keyHandler);
+    document.addEventListener('keyup', keyUpHandler);
 }
 
 function removeKeyboardControls() {
     if (keyHandler) {
         document.removeEventListener('keydown', keyHandler);
+        document.removeEventListener('keyup', window.keyUpHandler);
         keyHandler = null;
+        keysPressed.clear();
     }
 }
 
-// View functions
-function renderMenu(state, emit) {
-    const canJoin = state.playerName.trim() && state.connected && !state.connecting;
-    const buttonText = state.connecting ? 'Connecting...' : 
-                      !state.connected ? 'Connecting...' : 
-                      'Join Game';
+function startGameLoop(emitFn) {
+    function gameLoop(currentTime) {
+        if (currentTime - lastFrameTime >= 1000) {
+            fpsDisplay = frameCount;
+            frameCount = 0;
+            lastFrameTime = currentTime;
+            emitFn('updateFPS', fpsDisplay);
+        }
+        frameCount++;
 
-    return CreateElement('div', { class: 'menu-container' }, [
-        CreateElement('div', { class: 'player-image' }, [
-            CreateElement('img', {
-                src: './styles/picture_enter.gif',
-                alt: 'Player Avatar',
-                class: 'player-avatar'
-            })
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    if (!animationId) {
+        animationId = requestAnimationFrame(gameLoop);
+    }
+}
+
+function stopGameLoop() {
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+}
+
+function renderChatMessages(state) {
+    if (!state.messages || state.messages.length === 0) {
+        return createElement('div', { class: 'chat-empty' }, ['No messages yet...']);
+    }
+    return createElement('div', { class: 'chat-messages' },
+        state.messages.map(msg =>
+            createElement('div', { class: 'chat-message', key: msg.id || `${msg.sender}-${msg.timestamp}` }, [
+                createElement('span', { class: 'chat-sender' }, [`${msg.sender}: `]),
+                createElement('span', { class: 'chat-text' }, [msg.text])
+            ])
+        )
+    );
+}
+
+function renderChat(state, emitFn) {
+    if (!state.showChat) return null;
+
+    return createElement('div', { class: 'chat-container' }, [
+        createElement('div', { class: 'chat-header' }, [
+            createElement('h3', {}, ['Chat']),
+            createElement('button', {
+                class: 'chat-close',
+                on: { click: () => emitFn('toggleChat') }
+            }, ['×'])
         ]),
+        renderChatMessages(state),
+        createElement('div', { class: 'chat-input-container' }, [
+            createElement('input', {
+                type: 'text',
+                placeholder: 'Type your message...',
+                maxlength: '20',
+                value: state.chatInput,
+                on: {
+                    input: (e) => emitFn('updateChatInput', e.target.value),
+                    keydown: (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const message = e.target.value.trim();
+                            if (message) {
+                                emitFn('sendChatMessage', message);
+                            }
+                        }
+                    }
+                }
+            }),
+            createElement('button', {
+                class: 'chat-send-btn',
+                on: {
+                    click: () => {
+                        const message = state.chatInput.trim();
+                        if (message) {
+                            emitFn('sendChatMessage', message);
+                        }
+                    }
+                }
+            }, ['Send'])
+        ]),
+        createElement('div', { class: 'chat-status' }, ['Connected • Ready to chat'])
+    ]);
+}
 
-        CreateElement('div', { class: 'menu-form' }, [
-            CreateElement('h1', { class: 'welcome-title' }, ['Bomberman Game']),
-            CreateElement('p', { class: 'subtitle' }, ['Enter your name to join the battle!']),
+function renderMenu(state, emitFn) {
+    const canJoin = state.playerName.trim() && state.connected && !state.connecting;
+    const buttonText = state.connecting ? 'Connecting...' :
+        !state.connected ? 'Connecting...' :
+            'Join Game';
 
-            state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
-            state.statusMessage ? CreateElement('div', { class: 'status-message' }, [state.statusMessage]) : null,
+    return createElement('div', { class: 'menu-container' }, [
+        createElement('div', { class: 'menu-form' }, [
+            createElement('h1', { class: 'welcome-title' }, ['💣 Bomberman Game 💣']),
+            createElement('p', { class: 'subtitle' }, ['Enter your name to join the battle!']),
 
-            CreateElement('div', { class: 'input-group' }, [
-                CreateElement('label', { class: 'input-label' }, ['Player Name:']),
-                CreateElement('input', {
+            createElement('div', { class: 'message-container' }, [
+                state.errorMessage ? createElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+                state.statusMessage ? createElement('div', { class: 'status-message' }, [state.statusMessage]) : null,
+            ].filter(Boolean)),
+
+            createElement('div', { class: 'input-group' }, [
+                createElement('label', { class: 'input-label' }, ['Player Name:']),
+                createElement('input', {
                     type: 'text',
                     class: 'name-input',
                     placeholder: 'Enter your name...',
                     value: state.playerName,
+                    maxlength: '20',
                     on: {
-                        input: (e) => emit('updatePlayerName', e.target.value),
+                        input: (e) => emitFn('updatePlayerName', e.target.value),
                         keydown: (e) => {
                             if (e.key === 'Enter' && canJoin) {
                                 e.preventDefault();
-                                emit('startGame');
+                                emitFn('startGame');
                             }
                         }
                     }
                 })
             ]),
 
-            CreateElement('div', { class: 'button-group' }, [
-                CreateElement('button', {
+            createElement('div', { class: 'button-group' }, [
+                createElement('button', {
                     class: 'btn btn-primary',
                     disabled: !canJoin,
                     on: {
-                        click: () => emit('startGame')
+                        click: () => emitFn('startGame')
                     }
                 }, [buttonText]),
-                CreateElement('button', {
+                createElement('button', {
                     class: 'btn btn-secondary',
                     on: {
-                        click: () => emit('updatePlayerName', '')
+                        click: () => {
+                            emitFn('updatePlayerName', '')
+                        }
                     }
                 }, ['Clear']),
-                !state.connected && !state.connecting ? CreateElement('button', {
+                !state.connected && !state.connecting ? createElement('button', {
                     class: 'btn btn-secondary',
                     on: {
-                        click: () => emit('connectToServer')
+                        click: () => emitFn('connectToServer')
                     }
                 }, ['Reconnect']) : null
+            ].filter(Boolean))
+        ])
+    ]);
+}
+
+function renderWaiting(state, emitFn) {
+    return createElement('div', { class: 'menu-container' }, [
+        createElement('div', { class: 'menu-form waiting-form' }, [
+            createElement('h1', { class: 'welcome-title' }, ['⏳ Waiting for Players...']),
+            createElement('div', { class: 'countdown-display' }, [
+                createElement('div', { class: 'countdown-number' }, [
+                    (state.countdownroom || 20).toString()
+                ]),
+            ]),
+            createElement('p', { class: 'subtitle' }, [state.statusMessage]),
+
+            createElement('div', { class: 'message-container' }, [
+                state.errorMessage ? createElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
+            ].filter(Boolean)),
+
+            createElement('div', { class: 'players-list' }, [
+                createElement('h3', {}, ['Players in lobby:']),
+                ...(state.players || []).map(player =>
+                    createElement('div', { class: 'player-item', key: player.id }, [
+                        createElement('span', { class: `player-status-dot ${player.connected ? 'online' : 'offline'}` }),
+                        `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
+                    ])
+                )
+            ].filter(Boolean)),
+            createElement('div', { class: 'loading-indicator' }, [
+                createElement('div', { class: 'spinner' })
+            ]),
+            createElement('div', { class: 'button-group' }, [
+                createElement('button', {
+                    class: 'btn btn-secondary',
+                    on: {
+                        click: () => {
+                            emitFn('resetGame');
+                            emitFn('leaveRoom');
+                        },
+                    }
+                }, ['Back to Menu'])
+            ]),
+            createElement('div', { class: 'chat-section' }, [
+                createElement('h3', { class: 'chat-section-title' }, ['Lobby Chat']),
+                renderChatMessages(state),
+                createElement('div', { class: 'chat-input-container' }, [
+                    createElement('input', {
+                        type: 'text',
+                        placeholder: 'Type your message here...',
+                        maxlength: '20',
+                        value: state.chatInput,
+                        on: {
+                            input: (e) => emitFn('updateChatInput', e.target.value),
+                            keydown: (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const message = e.target.value.trim();
+                                    if (message) {
+                                        emitFn('sendChatMessage', message);
+                                    }
+                                }
+                            }
+                        }
+                    }),
+                    createElement('button', {
+                        class: 'chat-send-btn',
+                        on: {
+                            click: () => {
+                                const message = state.chatInput.trim();
+                                if (message) {
+                                    emitFn('sendChatMessage', message);
+                                }
+                            }
+                        }
+                    }, ['Send'])
+                ]),
             ])
         ])
     ]);
 }
 
-function renderWaiting(state, emit) {
-    return CreateElement('div', { class: 'menu-container' }, [
-        CreateElement('div', { class: 'menu-form' }, [
-            CreateElement('h1', { class: 'welcome-title' }, ['Waiting for Players...']),
-            CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
-            CreateElement('div', { class: 'loading-indicator' }, [
-                CreateElement('div', { class: 'spinner' })
+function renderCountdown(state, emitFn) {
+    return createElement('div', { class: 'menu-container' }, [
+        createElement('div', { class: 'menu-form' }, [
+            createElement('h1', { class: 'welcome-title' }, ['🚀 Game Starting!']),
+            createElement('div', { class: 'countdown-display' }, [
+                createElement('div', { class: 'countdown-number' }, [state.countdown.toString()]),
+                createElement('p', { class: 'countdown-text' }, ['Get ready to battle!'])
             ]),
-            CreateElement('div', { class: 'button-group' }, [
-                CreateElement('button', {
-                    class: 'btn btn-secondary',
-                    on: {
-                        click: () => emit('resetGame')
-                    }
-                }, ['Back to Menu'])
+            createElement('div', { class: 'players-list' }, [
+                createElement('h3', {}, ['Players:']),
+                ...state.players.map(player =>
+                    createElement('div', { class: 'player-item', key: player.id }, [
+                        createElement('span', { class: `player-status-dot ${player.connected ? 'online' : 'offline'}` }),
+                        `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
+                    ])
+                )
             ])
         ])
     ]);
 }
 
 function renderGameTile(state, i, j) {
-    const index = i * state.gridSize + j;
     const cellValue = state.board[i] ? state.board[i][j] : 0;
-
     let tileClass = 'tile';
+
     if (cellValue === 2) tileClass += ' wall';
     else if (cellValue === 1) tileClass += ' block';
-    else if (cellValue === 3) tileClass += ' explosion';
+
+    const hasExplosion = state.explosions && state.explosions.some(expl => expl.x === j && expl.y === i);
+    if (hasExplosion) tileClass += ' explosion';
 
     const children = [];
 
+    state.powerUps.forEach(powerUp => {
+        if (powerUp.x === j && powerUp.y === i) {
+            children.push(createElement('div', {
+                class: `power-up power-up-${powerUp.type}`,
+                title: powerUp.type,
+                key: `powerup-${powerUp.id}`
+            }));
+        }
+    });
+
     state.players.forEach(player => {
-        if (player.alive && player.x === j && player.y === i) {
-            children.push(CreateElement('div', {
-                class: `player p${player.id}`
+        if (player.lives > 0 && player.x === j && player.y === i) {
+            children.push(createElement('div', {
+                class: `player player-${player.id}${player.name === state.playerName ? ' current-player' : ''}`,
+                title: player.name,
+                key: `player-${player.id}`
             }));
         }
     });
 
     state.bombs.forEach(bomb => {
         if (bomb.x === j && bomb.y === i) {
-            children.push(CreateElement('div', {
-                class: 'bomb'
+            children.push(createElement('div', {
+                class: 'bomb',
+                title: 'Bomb',
+                key: `bomb-${bomb.playerId}-${bomb.x}-${bomb.y}-${bomb.timestamp}`
             }));
         }
     });
 
-    return CreateElement('div', { class: tileClass }, children);
+    return createElement('div', { class: tileClass, key: `tile-${i}-${j}` }, children);
 }
 
-function renderGame(state, emit) {
-    setupKeyboardControls(emit);
+function renderPlayerStats(state) {
+    if (!state.currentPlayer) return null;
+
+    const player = state.currentPlayer;
+    return createElement('div', { class: 'player-stats card' }, [
+        createElement('h3', {}, [`${player.name} (You)`]),
+        createElement('div', { class: 'stats-grid' }, [
+            createElement('div', { class: 'stat' }, [
+                createElement('span', { class: 'stat-label' }, ['❤️ Lives:']),
+                createElement('span', { class: 'stat-value' }, [player.lives.toString()])
+            ]),
+            createElement('div', { class: 'stat' }, [
+                createElement('span', { class: 'stat-label' }, ['💣 Bombs:']),
+                createElement('span', { class: 'stat-value' }, [player.bombCount.toString()])
+            ]),
+            createElement('div', { class: 'stat' }, [
+                createElement('span', { class: 'stat-label' }, ['🔥 Flame:']),
+                createElement('span', { class: 'stat-value' }, [player.flameSize.toString()])
+            ]),
+            createElement('div', { class: 'stat' }, [
+                createElement('span', { class: 'stat-label' }, ['⚡ Speed:']),
+                createElement('span', { class: 'stat-value' }, [player.speed.toString()])
+            ])
+        ])
+    ]);
+}
+
+function renderGame(state, emitFn) {
+    setupKeyboardControls(emitFn);
+    startGameLoop(emitFn);
 
     const gridChildren = [];
     for (let i = 0; i < state.gridSize; i++) {
@@ -403,74 +728,162 @@ function renderGame(state, emit) {
         }
     }
 
-    return CreateElement('div', { class: 'game-container' }, [
-        CreateElement('div', { class: 'game-info' }, [
-            CreateElement('h2', {}, ['Bomberman Game']),
-            CreateElement('p', {}, [`Players: ${state.players.filter(p => p.alive).length}`])
+    return createElement('div', { class: 'game-screen' }, [
+        createElement('div', { class: 'game-header card' }, [
+            createElement('div', { class: 'game-info' }, [
+                createElement('h2', {}, ['💣 Bomberman']),
+                createElement('p', {}, [`Players Alive: ${state.players.filter(p => p.alive).length}/${state.players.length}`]),
+                createElement('p', { class: 'fps-counter' }, [`FPS: ${state.fps}`])
+            ]),
+            createElement('div', { class: 'game-controls' }, [
+                createElement('button', {
+                    class: 'btn btn-small btn-icon',
+                    on: { click: () => emitFn('toggleChat') }
+                }, ['💬 Chat']),
+                createElement('button', {
+                    class: 'btn btn-small btn-secondary btn-icon',
+                    on: {
+                        click: () => {
+                            removeKeyboardControls();
+                            stopGameLoop();
+                            emitFn('leaveGame');
+                        }
+                    }
+                }, ['🚪 Leave'])
+            ])
         ]),
 
-        CreateElement('div', { class: 'game-grid' }, gridChildren),
+        createElement('div', { class: 'game-main' }, [
+            createElement('div', { class: 'game-grid' }, gridChildren),
 
-        CreateElement('div', { class: 'controls' }, [
-            CreateElement('p', {}, ['Use arrow keys to move']),
-            CreateElement('p', {}, ['Press SPACE to place a bomb']),
-            CreateElement('button', {
-                class: 'btn btn-secondary',
-                style: { marginTop: '10px' },
-                on: {
-                    click: () => {
-                        removeKeyboardControls();
-                        emit('resetGame');
-                    }
-                }
-            }, ['Leave Game'])
-        ])
+            createElement('div', { class: 'game-sidebar' }, [
+                renderPlayerStats(state),
+
+                createElement('div', { class: 'other-players card' }, [
+                    createElement('h4', {}, ['Other Players']),
+                    ...state.players
+                        .filter(p => p.name !== state.playerName)
+                        .map(player =>
+                            createElement('div', {
+                                class: `other-player ${!player.alive ? 'dead' : ''}`,
+                                key: player.id
+                            }, [
+                                createElement('span', { class: `player-status-dot ${player.alive ? 'online' : 'offline'}` }),
+                                createElement('span', { class: 'player-name' }, [player.name]),
+                                createElement('span', { class: 'player-lives' }, [`❤️ ${player.lives}`])
+                            ])
+                        )
+                ]),
+
+                createElement('div', { class: 'controls-help card' }, [
+                    createElement('h4', {}, ['Controls']),
+                    createElement('p', {}, [
+                        createElement('span', { class: 'key-hint' }, ['WASD']),
+                        ' or ',
+                        createElement('span', { class: 'key-hint' }, ['Arrow Keys']),
+                        ': Move'
+                    ]),
+                    createElement('p', {}, [
+                        createElement('span', { class: 'key-hint' }, ['Space']),
+                        ': Place Bomb'
+                    ]),
+                    createElement('p', {}, [
+                        createElement('span', { class: 'key-hint' }, ['C']),
+                        ': Toggle Chat'
+                    ])
+                ])
+            ])
+        ]),
+
+        renderChat(state, emitFn)
     ]);
 }
 
-function renderGameOver(state, emit) {
+function renderGameOver(state, emitFn) {
     removeKeyboardControls();
+    stopGameLoop();
 
-    return CreateElement('div', { class: 'menu-container' }, [
-        CreateElement('div', { class: 'menu-form' }, [
-            CreateElement('h1', { class: 'welcome-title' }, ['Game Over!']),
-            CreateElement('p', { class: 'subtitle' }, [`Winner: Player ${state.gameWinner}`]),
-            CreateElement('div', { class: 'button-group' }, [
-                CreateElement('button', {
+    const winnerName = state.gameWinner ? state.gameWinner.name : 'No one';
+    const isWinner = state.gameWinner && state.gameWinner.name === state.playerName;
+
+    return createElement('div', { class: 'menu-container' }, [
+        createElement('div', { class: 'menu-form' }, [
+            createElement('h1', { class: 'welcome-title' }, ['🎮 Game Over!']),
+            createElement('div', { class: 'winner-announcement' }, [
+                createElement('h2', {
+                    class: isWinner ? 'winner-text' : 'loser-text'
+                }, [
+                    isWinner ? '🎉 You Won! 🎉' : `Winner: ${winnerName}`
+                ]),
+                isWinner ?
+                    createElement('p', { class: 'winner-message' }, ['Congratulations! You are the last player standing!']) :
+                    createElement('p', { class: 'loser-message' }, ['Better luck next time!'])
+            ]),
+            createElement('div', { class: 'final-stats card' }, [
+                createElement('h3', {}, ['Final Results']),
+                ...state.players.map(player =>
+                    createElement('div', {
+                        class: `final-player ${player.alive ? 'winner' : 'eliminated'}`,
+                        key: player.id
+                    }, [
+                        createElement('span', { class: `player-status-icon ${player.alive ? 'icon-winner' : 'icon-eliminated'}` }),
+                        `${player.name} - ${player.alive ? 'Winner' : 'Eliminated'} (Lives: ${player.lives})`
+                    ])
+                )
+            ]),
+            createElement('div', { class: 'button-group' }, [
+                createElement('button', {
                     class: 'btn btn-primary',
                     on: {
-                        click: () => emit('resetGame')
+                        click: () => emitFn('resetGame')
                     }
-                }, ['Play Again'])
+                }, ['🔄 Play Again'])
             ])
         ])
     ]);
 }
 
-function view(state, emit) {
+function view(state, emitFn) {
     switch (state.screen) {
         case 'waiting':
-            return renderWaiting(state, emit);
+            return renderWaiting(state, emitFn);
+        case 'countdown':
+            return renderCountdown(state, emitFn);
         case 'game':
-            return renderGame(state, emit);
+            return renderGame(state, emitFn);
         case 'gameOver':
-            return renderGameOver(state, emit);
+            return renderGameOver(state, emitFn);
         default:
-            return renderMenu(state, emit);
+            return renderMenu(state, emitFn);
     }
 }
 
-const app = createApp({
-    state: initialState,
-    view,
-    reducers
+appStateManager.subscribe(() => {
+    requestAnimationFrame(() => {
+        const newState = appStateManager.getState();
+        currentVNode = render(view(newState, appEmit), appContainer, currentVNode);
+    });
 });
-
-app.mount(document.getElementById('game-container'));
-
-window.appEmit = app.emit;
 
 setTimeout(() => {
     console.log('Attempting initial connection to server...');
-    window.appEmit('connectToServer');
-}, 1000);
+    appEmit('connectToServer');
+}, 2000);
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopGameLoop();
+    } else {
+        const state = appStateManager.getState();
+        if (state && state.screen === 'game') {
+            startGameLoop(appEmit);
+        }
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    stopGameLoop();
+    removeKeyboardControls();
+});
+
+appStateManager.setState(initialState);
