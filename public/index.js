@@ -33,6 +33,17 @@ const initialState = {
     fps: 0
 };
 
+
+// let item = localStorage.getItem('bomberman')
+
+// console.log(item);
+
+// if (item) {
+//     console.log('there is an active tab');
+    
+//     return;
+// }
+
 const reducers = {
     updatePlayerName: (state, name) => ({
         ...state,
@@ -112,6 +123,7 @@ const reducers = {
             socket = new WebSocket('ws://localhost:8888');
 
             socket.addEventListener('open', () => {
+                localStorage.setItem('bomberman','active_tab')
                 // console.log('Connected to server');
                 if (window.appEmit) {
                     window.appEmit('connectionEstablished');
@@ -128,12 +140,15 @@ const reducers = {
 
             socket.addEventListener('close', () => {
                 // console.log('Connection closed');
+                localStorage.removeItem('bomberman')
+
                 if (window.appEmit) {
                     window.appEmit('connectionLost');
                 }
             });
 
             socket.addEventListener('error', (error) => {
+                localStorage.removeItem('bomberman')
                 // console.error('WebSocket error:', error);
                 if (window.appEmit) {
                     window.appEmit('setError', 'Failed to connect to server');
