@@ -90,7 +90,7 @@ wss.on('connection', (ws) => {
 
     ws.send(JSON.stringify({
         type: 'chatHistory',
-        messages: messages.slice(-10)
+        messages: messages
     }));
 
     ws.on('message', (message) => {
@@ -102,6 +102,12 @@ wss.on('connection', (ws) => {
                 handlePlayerJoin(ws, data.name);
             } else if (data.type === 'move') {
                 const player = getPlayerByWebSocket(ws);
+                
+                for (pl of players) {
+                    console.log(pl.name, '====>', pl.position);
+                }
+                console.log();
+                
                 if (player && gameState === 'playing') {
                     handlePlayerMove(player, data.direction);
                 }
@@ -114,28 +120,27 @@ wss.on('connection', (ws) => {
                     handlePlaceBomb(player);
                 }
             } else if (data.type === 'leaveGame') {
-                console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
                 
                 const player = getPlayerByWebSocket(ws);
-                let pl_pos = player?.position 
-                if (player) {
+                let pl_pos = player.position 
+                if (player && gameState === 'playing') {
                     broadcast(JSON.stringify({ type: 'gameReset'}), player.id);
                     playerConnections.delete(player.id);
                     players = players.filter(a => a.id != player.id);
-                    if (players.length < 2) {
-                        checkGameOver();
-                    }
-                    players.map((p) => {
-                        broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
-                    })
                 }
+
+                console.log(players);
+                
 
                 for (play of players) {
 
-                    console.log(play.position, "===>>>>", pl_pos);
+                    // console.log(play.position, "===>>>>", pl_pos);
                     
-
-                    if (play.position > pl_pos && !gameStarted) {
+                    // console.log(gameState);
+                    
+                    if (play.position > pl_pos && gameState != 'playing') {
+                        console.log('-+-+-+', gameState);
+                        const playerPosition = positions[play.position];
                         play.position -= 1
 
                         play.x = playerPosition.x
@@ -143,6 +148,13 @@ wss.on('connection', (ws) => {
                         play.y = playerPosition.y
                     }
                 }
+
+                if (players.length < 2) {
+                        checkGameOver();
+                    }
+                    players.map((p) => {
+                        broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
+                    })
                 
             } else if (data.type === 'message') {
                 console.log(data);
@@ -186,9 +198,9 @@ wss.on('connection', (ws) => {
                     // .log(play.position, "<<<<===>>>>", pl_pos);
                     
 
-                    if (play.position > pl_pos) {
+                    if (play.position > pl_pos && gameState != 'playing') {
                         play.position -= 1
-                        // console.log(play);
+                        console.log(gameState, "hhhhhhhhhhhhhhhhh");
                         const playerPosition = positions[play.position];
                         
                         play.x = playerPosition.x
@@ -252,13 +264,6 @@ function handleChatMessage(player, messageText, ws) {
     };
 
     messages.push(message);
-
-    if (messages.length > 10) {
-        messages.shift()
-    }
-
-    // console.log("---------++++++++++----------", message, player.name);
-    
 
     broadcast(JSON.stringify({
         type: 'newMessage',
@@ -611,7 +616,7 @@ function explodeBomb(bomb) {
                 hitPlayer.alive = false;
                 dropPowerUpOnDeath(hitPlayer);
             } else {
-                const startPos = positions[players.indexOf(hitPlayer) % positions.length];
+                const startPos = positions[hitPlayer.position % positions.length];
                 hitPlayer.x = startPos.x;
                 hitPlayer.y = startPos.y;
             }
