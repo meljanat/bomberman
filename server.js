@@ -105,21 +105,49 @@ wss.on('connection', (ws) => {
                 if (player && gameState === 'playing') {
                     handlePlayerMove(player, data.direction);
                 }
+
+                // console.log("=====> : ", players);
+                
             } else if (data.type === 'placeBomb') {
                 const player = getPlayerByWebSocket(ws);
                 if (player && gameState === 'playing') {
                     handlePlaceBomb(player);
                 }
             } else if (data.type === 'leaveGame') {
+                console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+                
                 const player = getPlayerByWebSocket(ws);
+                let pl_pos = player?.position 
                 if (player) {
+                    broadcast(JSON.stringify({ type: 'gameReset'}), player.id);
                     playerConnections.delete(player.id);
                     players = players.filter(a => a.id != player.id);
                     if (players.length < 2) {
                         checkGameOver();
                     }
+                    players.map((p) => {
+                        broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
+                    })
                 }
+
+                for (play of players) {
+
+                    console.log(play.position, "===>>>>", pl_pos);
+                    
+
+                    if (play.position > pl_pos && !gameStarted) {
+                        play.position -= 1
+
+                        play.x = playerPosition.x
+
+                        play.y = playerPosition.y
+                    }
+                }
+                
             } else if (data.type === 'message') {
+                console.log(data);
+                
+                
                 const player = getPlayerByWebSocket(ws);
                 
                 console.log(data.message);
@@ -130,6 +158,9 @@ wss.on('connection', (ws) => {
             } else if (data.type === 'leaveRoom') {
                 // console.log("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo");
                 const player = getPlayerByWebSocket(ws);
+
+                let pl_pos = player.position 
+
                 playerConnections.delete(player.id);
                 players = players.filter(a => a.id != player.id);
                 if (players.length < 2) {
@@ -145,7 +176,26 @@ wss.on('connection', (ws) => {
                     players.map((p) => {
                         broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
                     });
+
                 }
+
+                for (play of players) {
+
+                    // console
+                    // .log(play.position, "<<<<===>>>>", pl_pos);
+                    
+
+                    if (play.position > pl_pos) {
+                        play.position -= 1
+                        // console.log(play);
+                        const playerPosition = positions[play.position];
+                        
+                        play.x = playerPosition.x
+
+                        play.y = playerPosition.y
+                    }
+                }
+
             }
         } catch (error) {
             // console.error('Error parsing message:', error);
@@ -248,7 +298,10 @@ function handlePlayerJoin(ws, name) {
         bombs: 0,
         flameSize: 1,
         speed: 1,
+        position : players.length
     };
+
+    
 
     players.push(player);
     playerConnections.set(playerId, ws);
@@ -315,18 +368,20 @@ function startCountdownRoom() {
 }
 
 function startCountdown() {
-    // console.log("dkhalllllllllllllllllllllllll");
-    
-    clearGameTimers();
     gameState = 'countdown';
     ten_sec = 10;
+    clearGameTimers();
 
-    broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}));
+    players.map(a => {
+        broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}), a.id);
+    });
 
     countdownTimer = setInterval(() => {
         ten_sec--;
-        broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}));
-        // console.log(players.length);
+        players.map(a => {
+            broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}), a.id);
+        });
+        //console.log(players.length);
         
         if (players.length < 2) {
             checkGameOver()
@@ -334,7 +389,6 @@ function startCountdown() {
         }
         if (ten_sec <= 0) {
             clearInterval(countdownTimer);
-            gameStarted = true
             startGame();
         }
     }, 1000);
@@ -342,7 +396,7 @@ function startCountdown() {
 
 function startGame() {
     gameState = 'playing';
-    gameStarted = true;
+    gameStarted = false;
     players.map(a => {
         broadcast(JSON.stringify({ type: 'gameStart', board, players, bombs, powerUps, players }), a.id);
     });
@@ -356,6 +410,10 @@ function clearGameTimers() {
     if (countdownTimer) {
         clearInterval(countdownTimer);
         countdownTimer = null;
+    }
+    if (countdownTimerroom) {
+        clearInterval(countdownTimerroom)
+        countdownTimerroom = null;
     }
 }
 
@@ -601,15 +659,19 @@ function dropPowerUpOnDeath(player) {
 
 function checkGameOver() {
     const alivePlayers = players.filter(p => p.alive);
-    // console.log(players.length, "----++++++");
+    //console.log(players.length, "----++++++");
     
     if (alivePlayers.length <= 1) {
         gameState = 'ended';
         const winner = alivePlayers.length === 1 ? alivePlayers[0] : null;
-        broadcast(JSON.stringify({
-            type: 'gameOver',
-            winner: winner
-        }));
+        players.map(a => {
+        broadcast(JSON.stringify({ type: 'gameOver',
+            winner: winner}), a.id);
+        });
+        // broadcast(JSON.stringify({
+        //     type: 'gameOver',
+        //     winner: winner
+        // }));
         
         setTimeout(() => {
             resetGame();

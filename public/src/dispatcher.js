@@ -32,7 +32,7 @@ export function createDispatcher() {
             }
             afterHandlers.forEach(handler => handler(commandName, payload));
         } catch (error) {
-            console.error(`Error dispatching ${commandName}:`, error);
+            //console.error(`Error dispatching ${commandName}:`, error);
         }
     }
 

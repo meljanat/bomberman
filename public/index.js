@@ -33,6 +33,17 @@ const initialState = {
     fps: 0
 };
 
+
+// let item = localStorage.getItem('bomberman')
+
+// console.log(item);
+
+// if (item) {
+//     console.log('there is an active tab');
+    
+//     return;
+// }
+
 const reducers = {
     updatePlayerName: (state, name) => ({
         ...state,
@@ -52,6 +63,8 @@ const reducers = {
 
     sendChatMessage: (state, message) => {
         const messageToSend = message || state.chatInput;
+        // console.log("====>>>>> ", state,"<<<<<=====",messageToSend );
+
         if (socket && socket.readyState === WebSocket.OPEN && messageToSend.trim()) {
             socket.send(JSON.stringify({
                 type: 'message',
@@ -93,16 +106,16 @@ const reducers = {
     }),
 
     connectToServer: (state) => {
-        console.log('Attempting to connect to server...');
+        // console.log('Attempting to connect to server...');
 
         if (socket && socket.readyState === WebSocket.OPEN) {
-            console.log('Already connected');
+            // console.log('Already connected');
 
             return { ...state, connected: true };
         }
 
         if (socket && socket.readyState === WebSocket.CONNECTING) {
-            console.log('Already connecting');
+            // console.log('Already connecting');
             return { ...state, connecting: true };
         }
 
@@ -110,7 +123,8 @@ const reducers = {
             socket = new WebSocket('ws://localhost:8888');
 
             socket.addEventListener('open', () => {
-                console.log('Connected to server');
+                localStorage.setItem('bomberman','active_tab')
+                // console.log('Connected to server');
                 if (window.appEmit) {
                     window.appEmit('connectionEstablished');
                 }
@@ -118,21 +132,24 @@ const reducers = {
 
             socket.addEventListener('message', (event) => {
                 const data = JSON.parse(event.data);
-                console.log('Received message:', data);
+                // console.log('Received message:', data);
                 if (window.appEmit) {
                     window.appEmit('handleServerMessage', data);
                 }
             });
 
             socket.addEventListener('close', () => {
-                console.log('Connection closed');
+                // console.log('Connection closed');
+                localStorage.removeItem('bomberman')
+
                 if (window.appEmit) {
                     window.appEmit('connectionLost');
                 }
             });
 
             socket.addEventListener('error', (error) => {
-                console.error('WebSocket error:', error);
+                localStorage.removeItem('bomberman')
+                // console.error('WebSocket error:', error);
                 if (window.appEmit) {
                     window.appEmit('setError', 'Failed to connect to server');
                 }
@@ -140,7 +157,7 @@ const reducers = {
 
             return { ...state, connecting: true, errorMessage: '' };
         } catch (error) {
-            console.error('Error creating WebSocket:', error);
+            // console.error('Error creating WebSocket:', error);
             return { ...state, errorMessage: 'Failed to connect to server', connecting: false };
         }
     },
@@ -165,7 +182,7 @@ const reducers = {
     }),
 
     startGame: (state) => {
-        console.log('Starting game with name:', state.playerName);
+        // console.log('Starting game with name:', state.playerName);
 
         if (!state.playerName.trim()) {
             return {
@@ -182,7 +199,7 @@ const reducers = {
                 statusMessage: 'Joining game...'
             };
         } else {
-            console.error('Socket not ready, state:', socket ? socket.readyState : 'no socket');
+            // console.error('Socket not ready, state:', socket ? socket.readyState : 'no socket');
             return {
                 ...state,
                 errorMessage: 'Not connected to server. Please wait and try again.'
@@ -191,7 +208,7 @@ const reducers = {
     },
 
     handleServerMessage: (state, data) => {
-        console.log('Handling server message:', data);
+        // console.log('Handling server message:', data);
         switch (data.type) {
             case 'error':
                 return {
@@ -489,10 +506,9 @@ function stopGameLoop() {
 }
 
 function renderChatMessages(state) {
-    if (!state.messages || state.messages.length === 0) {
-        return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
-    }
-    console.log("mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", state);
+
+    //console.log(state);
+
 
     state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null;
 
@@ -529,7 +545,7 @@ function renderChat(state, emit) {
                 on: { click: () => emit('toggleChat') }
             }, ['×'])
         ]),
-        renderChatMessages(state.messages),
+        renderChatMessages(state),
         CreateElement('div', { class: 'chat-input-container' }, [
             CreateElement('input', {
                 type: 'text',
@@ -544,6 +560,7 @@ function renderChat(state, emit) {
                             const message = e.target.value.trim();
                             if (message) {
                                 emit('sendChatMessage', message);
+                                e.target.value = '';
                             }
                         }
                     }
@@ -552,14 +569,16 @@ function renderChat(state, emit) {
             CreateElement('button', {
                 class: 'chat-send-btn',
                 on: {
-                    click: () => {
-                        const message = state.chatInput.trim();
+                    click: (e) => {
+                        const input = e.target.parentElement.querySelector('input');
+                        const message = input.value.trim();
                         if (message) {
                             emit('sendChatMessage', message);
+                            input.value = '';
                         }
                     }
-                }
-            }, ['Send'])
+                    }
+                }, ['Send'])
         ])
     ]);
 }
@@ -612,7 +631,7 @@ function renderMenu(state, emit) {
                     class: 'btn btn-secondary',
                     on: {
                         click: () => {
-                            console.log("vvvvvvvvvvvvvvvvvvvvvvvvv"),
+                            // console.log("vvvvvvvvvvvvvvvvvvvvvvvvv"),
                             emit('updatePlayerName', '')
                         }
                     }
@@ -640,11 +659,11 @@ function renderWaiting(state, emit) {
                     ]),
                 ]),
                 CreateElement('p', { class: 'subtitle' }, [state.statusMessage]),
-                
+
                 CreateElement('div', { class: 'message-container' }, [
                     state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
                 ].filter(Boolean)),
-                
+
                 CreateElement('div', { class: 'players-list' }, [
                     CreateElement('h3', {}, ['Players in lobby:'].filter(Boolean)),
                     ...(state.players || []).map(player =>
@@ -671,7 +690,7 @@ function renderWaiting(state, emit) {
 
             CreateElement('div', {}, [
                 renderChatMessages(state),
-    
+
                 CreateElement('div', { class: 'chat-input-container' }, [
                     CreateElement('input', {
                         type: 'text',
@@ -696,6 +715,11 @@ function renderWaiting(state, emit) {
                             click: (e) => {
                                 const input = e.target.parentElement.querySelector('input');
                                 const message = input.value.trim();
+                                
+                                console.log(input);
+                                console.log(message);
+                                
+                                
                                 if (message) {
                                     emit('sendChatMessage', message);
                                     input.value = '';
@@ -704,7 +728,7 @@ function renderWaiting(state, emit) {
                         }
                     }, ['Send'])
                 ]),
-    
+
                 CreateElement('div', { class: 'chat-status' }, ['Connected • Ready to chat'])
             ]),
         ])
@@ -937,7 +961,7 @@ app.mount(document.getElementById('game-container'));
 window.appEmit = app.emit;
 
 setTimeout(() => {
-    console.log('Attempting initial connection to server...');
+    // console.log('Attempting initial connection to server...');
     window.appEmit('connectToServer');
 }, 2000);
 
