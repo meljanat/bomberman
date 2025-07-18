@@ -103,10 +103,10 @@ wss.on('connection', (ws) => {
             } else if (data.type === 'move') {
                 const player = getPlayerByWebSocket(ws);
 
-                for (pl of players) {
-                    console.log(pl.name, '====>', pl.position);
-                }
-                console.log();
+                // for (pl of players) {
+                //     console.log(pl.name, '====>', pl.position);
+                // }
+                // console.log();
 
                 if (player && gameState === 'playing') {
                     handlePlayerMove(player, data.direction);
@@ -129,7 +129,7 @@ wss.on('connection', (ws) => {
                     players = players.filter(a => a.id != player.id);
                 }
 
-                console.log(players);
+                // console.log(players);
 
 
                 for (play of players) {
@@ -139,7 +139,7 @@ wss.on('connection', (ws) => {
                     // console.log(gameState);
 
                     if (play.position > pl_pos && gameState != 'playing') {
-                        console.log('-+-+-+', gameState);
+                        // console.log('-+-+-+', gameState);
                         const playerPosition = positions[play.position];
                         play.position -= 1
 
@@ -157,7 +157,7 @@ wss.on('connection', (ws) => {
                 })
 
             } else if (data.type === 'message') {
-                console.log(data);
+                // console.log(data);
 
 
                 const player = getPlayerByWebSocket(ws);
@@ -367,6 +367,7 @@ function startCountdownRoom() {
             // console.log("checkkkkkkkkkkkkkkkkkkkkkk");
 
             clearInterval(countdownTimerroom);
+            gameStarted = true;
             startCountdown();
         }
     }, 1000);
@@ -401,9 +402,9 @@ function startCountdown() {
 
 function startGame() {
     gameState = 'playing';
-    gameStarted = false;
+    gameStarted = true;
     players.map(a => {
-        broadcast(JSON.stringify({ type: 'gameStart', board, players, bombs, powerUps, players }), a.id);
+        broadcast(JSON.stringify({ type: 'gameStart', board, players, bombs, powerUps }), a.id);
     });
 }
 
@@ -669,6 +670,7 @@ function checkGameOver() {
     if (alivePlayers.length <= 1) {
         gameState = 'ended';
         const winner = alivePlayers.length === 1 ? alivePlayers[0] : null;
+        gameStarted = false
         players.map(a => {
             broadcast(JSON.stringify({
                 type: 'gameOver',

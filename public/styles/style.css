@@ -141,6 +141,7 @@ body {
     margin-bottom: 8px;
     font-weight: 600;
     color: #ecf0f1;
+    background: rgba(255, 255, 255, 0.1);
     font-size: 1rem;
 }
 
