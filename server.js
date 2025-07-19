@@ -705,12 +705,6 @@ function resetGame() {
         [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
     ];
-    positions = [
-        { x: 1, y: 1 },
-        { x: 9, y: 9 },
-        { x: 1, y: 9 },
-        { x: 9, y: 1 },
-    ];
     gameStarted = false;
 }
 const PORT = 8888;
