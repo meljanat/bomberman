@@ -489,7 +489,7 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
             const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
             if (hasBomb) {
                 console.log(`Tile (${x}, ${y}) has a bomb`);
-                return false;
+                return true;
             }
             
             const hasOtherPlayer = players.some(p => 
@@ -552,7 +552,7 @@ function handlePlaceBomb(player) {
 
     setTimeout(() => {
         explodeBomb(bomb);
-    }, 3000);
+    }, 1000);
 }
 
 function explodeBomb(bomb) {

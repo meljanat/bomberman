@@ -417,10 +417,10 @@ body {
 
 /* Game entities */
 .bomb {
-    width: 30px;
-    height: 30px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    background-image: url('./bomb.png');
+    background-image: url('./bomb.gif');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -430,7 +430,6 @@ body {
     color: #ff0000;
     font-size: 16px;
     animation: bomb-tick 0.5s ease-in-out infinite alternate;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     z-index: 5;
 }
 
@@ -440,8 +439,8 @@ body {
 }
 
 .power-up {
-    width: 25px;
-    height: 25px;
+    width: 50px;
+    height: 50px;
     border-radius: 4px;
     display: flex;
     align-items: center;
