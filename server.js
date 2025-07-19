@@ -169,9 +169,9 @@ wss.on('connection', (ws) => {
                 // console.log("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo");
                 const player = getPlayerByWebSocket(ws);
 
-                let pl_pos = player.position
+                let pl_pos = player?.position
 
-                playerConnections.delete(player.id);
+                playerConnections.delete(player?.id);
                 players = players.filter(a => a.id != player.id);
                 if (players.length < 2) {
                     // console.log(players, "dddddddddddddddddddddddddddddddddddd");
@@ -198,7 +198,7 @@ wss.on('connection', (ws) => {
                     // .log(play.position, "<<<<===>>>>", pl_pos);
 
 
-                    if (play.position > pl_pos && gameState != 'playing') {
+                    if (pl_pos && play.position > pl_pos && gameState != 'playing') {
                         play.position -= 1
                         const playerPosition = positions[play.position];
 
@@ -233,6 +233,7 @@ wss.on('connection', (ws) => {
                 players.map((p) => {
                     broadcast(JSON.stringify({ type: 'gameState', state: gameState }), p.id);
                 })
+                return;
             }
 
             if (gameState !== 'playing') {
