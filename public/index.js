@@ -667,16 +667,6 @@ function renderGameTile(state, i, j) {
         }
     });
 
-    state.players.forEach(player => {
-        if (player.lives > 0 && player.x === j && player.y === i) {
-            children.push(createElement('div', {
-                class: `player player-${player.id}${player.name === state.playerName ? ' current-player' : ''}`,
-                title: player.name,
-                key: `player-${player.id}`
-            }));
-        }
-    });
-
     state.bombs.forEach(bomb => {
         if (bomb.x === j && bomb.y === i) {
             children.push(createElement('div', {
@@ -727,6 +717,17 @@ function renderGame(state, emitFn) {
             gridChildren.push(renderGameTile(state, i, j));
         }
     }
+
+    state.players.forEach(player => {
+        if (player.lives > 0) {
+            gridChildren.push(createElement('div', {
+                class: `player player-${player.id}${player.name === state.playerName ? ' current-player' : ''}`,
+                title: player.name,
+                key: `player-${player.id}`,
+                style: `transform: translate(${player.x * 32}px, ${player.y * 32}px)`
+            }));
+        }
+    });
 
     return createElement('div', { class: 'game-screen' }, [
         createElement('div', { class: 'game-header card' }, [

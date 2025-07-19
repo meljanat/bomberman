@@ -6,17 +6,21 @@
 }
 
 body {
-    background-image: url('https://placehold.co/1920x1080/2c3e50/ecf0f1?text=Game+Background'); /* Placeholder background image */
+    background-image: url('https://placehold.co/1920x1080/2c3e50/ecf0f1?text=Game+Background');
+    /* Placeholder background image */
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
     background-attachment: fixed;
-    font-family: 'Inter', sans-serif; /* Using Inter font */
+    font-family: 'Inter', sans-serif;
+    /* Using Inter font */
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    background-color: #1a1a2e; /* Darker background */
-    color: #e0e0e0; /* Lighter text color */
+    background-color: #1a1a2e;
+    /* Darker background */
+    color: #e0e0e0;
+    /* Lighter text color */
     overflow-x: hidden;
     display: flex;
     justify-content: center;
@@ -27,28 +31,40 @@ body {
 .game-container {
     position: relative;
     width: 100%;
-    max-width: 1200px; /* Max width for larger screens */
+    max-width: 1200px;
+    /* Max width for larger screens */
     min-height: 100vh;
-    background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(46, 26, 46, 0.9)); /* Darker, more atmospheric gradient */
-    backdrop-filter: blur(15px); /* Stronger blur */
-    border: 2px solid rgba(255, 255, 255, 0.05); /* Subtle border */
-    border-radius: 15px; /* Rounded corners for the main container */
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(46, 26, 46, 0.9));
+    /* Darker, more atmospheric gradient */
+    backdrop-filter: blur(15px);
+    /* Stronger blur */
+    border: 2px solid rgba(255, 255, 255, 0.05);
+    /* Subtle border */
+    border-radius: 15px;
+    /* Rounded corners for the main container */
     display: flex;
     flex-direction: column;
     padding: 20px;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7); /* Deeper shadow */
-    overflow: hidden; /* Ensure content stays within bounds */
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+    /* Deeper shadow */
+    overflow: hidden;
+    /* Ensure content stays within bounds */
 }
 
 /* Card-like styling for various sections */
 .card {
-    background: rgba(30, 30, 50, 0.7); /* Darker, semi-transparent background */
+    background: rgba(30, 30, 50, 0.7);
+    /* Darker, semi-transparent background */
     backdrop-filter: blur(10px);
-    border-radius: 12px; /* Consistent rounded corners */
+    border-radius: 12px;
+    /* Consistent rounded corners */
     padding: 20px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); /* Soft shadow */
-    border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle border */
-    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth transition */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    /* Soft shadow */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    /* Subtle border */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* Smooth transition */
 }
 
 .card:hover {
@@ -68,12 +84,17 @@ body {
 }
 
 .menu-form {
-    background: rgba(10, 10, 20, 0.9); /* Very dark, almost opaque background */
-    backdrop-filter: blur(25px); /* Even stronger blur */
-    border-radius: 25px; /* More rounded */
+    background: rgba(10, 10, 20, 0.9);
+    /* Very dark, almost opaque background */
+    backdrop-filter: blur(25px);
+    /* Even stronger blur */
+    border-radius: 25px;
+    /* More rounded */
     padding: 50px;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); /* Prominent shadow */
-    border: 1px solid rgba(255, 255, 255, 0.15); /* Clearer border */
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    /* Prominent shadow */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    /* Clearer border */
     max-width: 550px;
     width: 100%;
     text-align: center;
@@ -94,24 +115,34 @@ body {
 }
 
 @keyframes rotateGradient {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .welcome-title {
-    font-size: 3rem; /* Larger title */
-    font-weight: 900; /* Bolder */
-    background: linear-gradient(135deg, #6a11cb, #2575fc); /* Vibrant gradient */
+    font-size: 3rem;
+    /* Larger title */
+    font-weight: 900;
+    /* Bolder */
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    /* Vibrant gradient */
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     margin-bottom: 20px;
-    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Enhanced text shadow */
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    /* Enhanced text shadow */
     letter-spacing: 1px;
 }
 
 .subtitle {
-    color: #b0b0b0; /* Softer grey */
+    color: #b0b0b0;
+    /* Softer grey */
     font-size: 1.2rem;
     margin-bottom: 30px;
     font-weight: 400;
@@ -120,7 +151,8 @@ body {
 
 /* Messages */
 .message-container {
-    min-height: 60px; /* More space for messages */
+    min-height: 60px;
+    /* More space for messages */
     margin-bottom: 25px;
     display: flex;
     flex-direction: column;
@@ -135,7 +167,8 @@ body {
     border-radius: 12px;
     font-weight: 600;
     box-shadow: 0 6px 18px rgba(231, 76, 60, 0.4);
-    animation: slideInFadeOut 4s forwards ease-out; /* New animation */
+    animation: slideInFadeOut 4s forwards ease-out;
+    /* New animation */
     margin-bottom: 15px;
     width: 100%;
     max-width: 350px;
@@ -148,17 +181,34 @@ body {
     border-radius: 12px;
     font-weight: 600;
     box-shadow: 0 6px 18px rgba(46, 204, 113, 0.4);
-    animation: slideInFadeOut 4s forwards ease-out; /* New animation */
+    animation: slideInFadeOut 4s forwards ease-out;
+    /* New animation */
     margin-bottom: 15px;
     width: 100%;
     max-width: 350px;
 }
 
 @keyframes slideInFadeOut {
-    0% { opacity: 0; transform: translateY(-20px); }
-    10% { opacity: 1; transform: translateY(0); }
-    80% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-20px); display: none; }
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    10% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+        display: none;
+    }
 }
 
 /* Input styles */
@@ -336,47 +386,57 @@ body {
     gap: 30px;
     flex: 1;
     min-height: 0;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    justify-content: center; /* Center content when wrapped */
+    flex-wrap: wrap;
+    /* Allow wrapping on smaller screens */
+    justify-content: center;
+    /* Center content when wrapped */
 }
 
 /* Game grid */
 .game-grid {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(11, 1fr);
     grid-template-rows: repeat(11, 1fr);
-    gap: 2px; /* Slightly larger gap for definition */
+    gap: 2px;
+    /* Slightly larger gap for definition */
     background: rgba(0, 0, 0, 0.9);
     padding: 15px;
     border-radius: 15px;
     border: 2px solid rgba(255, 255, 255, 0.1);
     width: 100%;
-    max-width: 600px; /* Increased max-width for better visibility */
+    max-width: 600px;
+    /* Increased max-width for better visibility */
     aspect-ratio: 1;
     flex-shrink: 0;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
 }
 
 .tile {
-    background: #34495e; /* Darker base tile */
+    background: #34495e;
+    /* Darker base tile */
     position: relative;
-    border-radius: 4px; /* Slightly more rounded tiles */
+    border-radius: 4px;
+    /* Slightly more rounded tiles */
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 0;
     overflow: hidden;
-    transition: background-color 0.1s ease; /* Smooth background transition */
+    transition: background-color 0.1s ease;
+    /* Smooth background transition */
 }
 
 .tile.wall {
-    background: #9ee200; /* Darker, more solid wall */
+    background: #9ee200;
+    /* Darker, more solid wall */
     border: 1px solid #1a252f;
     box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
 .tile.block {
-    background: #d35400; /* Richer orange for blocks */
+    background: #d35400;
+    /* Richer orange for blocks */
     border: 1px solid #a04000;
     box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
     position: relative;
@@ -393,14 +453,26 @@ body {
 }
 
 @keyframes blockShine {
-    0% { transform: scale(0); opacity: 0; }
-    50% { transform: scale(1); opacity: 1; }
-    100% { transform: scale(0); opacity: 0; }
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
 }
 
 .tile.explosion {
     background: #e74c3c;
-    animation: explosion 0.4s ease-out; /* Slightly longer explosion */
+    animation: explosion 0.4s ease-out;
+    /* Slightly longer explosion */
     box-shadow: 0 0 20px #e74c3c, inset 0 0 10px #f39c12;
 }
 
@@ -410,48 +482,77 @@ body {
         transform: scale(0.8);
         opacity: 0.5;
     }
+
     50% {
         background: #f39c12;
         transform: scale(1.2);
         opacity: 1;
     }
+
     100% {
         background: #e74c3c;
         transform: scale(1);
-        opacity: 0; /* Fade out */
+        opacity: 0;
+        /* Fade out */
     }
 }
 
 /* Game entities */
 .player {
     position: absolute;
-    top: 5%; /* Slightly smaller to show tile */
-    left: 5%;
-    width: 90%;
-    height: 90%;
+    /*top: 5%; */
+    /* Slightly smaller to show tile */
+    /* left: 5%; */
+    width: 32px;
+    height: 32px;
+    background-image: url('player.svg');
     border-radius: 50%;
-    border: 3px solid rgba(255, 255, 255, 0.9); /* Thicker border */
-    z-index: 10;
-    transition: all 0.1s linear; /* Smooth movement */
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    /* Thicker border */
+    /* z-index: 10; */
+    transition: all 0.1s linear;
+    /* Smooth movement */
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
     animation: playerFloat 2s ease-in-out infinite alternate;
 }
 
-@keyframes playerFloat {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-5px); }
-}
+/* @keyframes playerFloat {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(-5px);
+    }
+} */
 
 /* Player specific colors */
-.player-1 { background: #e74c3c; } /* Red */
-.player-2 { background: #3498db; } /* Blue */
-.player-3 { background: #f1c40f; } /* Yellow */
-.player-4 { background: #9b59b6; } /* Purple */
+/* .player-1 {
+    background: #e74c3c;
+} */
 
-.current-player {
-    border-color: #2ecc71; /* Green highlight for current player */
-    box-shadow: 0 0 20px rgba(46, 204, 113, 0.8), 0 0 30px rgba(46, 204, 113, 0.5);
-}
+/* Red */
+/* .player-2 {
+    background: #3498db;
+} */
+
+/* Blue */
+/* .player-3 {
+    background: #f1c40f;
+} */
+
+/* Yellow */
+/* .player-4 {
+    background: #9b59b6;
+} */
+
+/* Purple */
+
+/* .current-player { */
+/* border-color: #2ecc71; */
+/* Green highlight for current player */
+/* box-shadow: 0 0 20px rgba(46, 204, 113, 0.8), 0 0 30px rgba(46, 204, 113, 0.5); */
+/* } */
 
 .bomb {
     position: absolute;
@@ -462,20 +563,35 @@ body {
     background: #2c3e50;
     border-radius: 50%;
     border: 3px solid #34495e;
-    animation: bombPulse 1s infinite alternate, bombFuse 3s linear forwards; /* New bomb animations */
+    animation: bombPulse 1s infinite alternate, bombFuse 3s linear forwards;
+    /* New bomb animations */
     z-index: 5;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7),
+        0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 @keyframes bombPulse {
-    0% { transform: scale(1); }
-    100% { transform: scale(1.05); }
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.05);
+    }
 }
 
 @keyframes bombFuse {
-    0% { border-color: #34495e; }
-    50% { border-color: #f1c40f; }
-    100% { border-color: #e74c3c; }
+    0% {
+        border-color: #34495e;
+    }
+
+    50% {
+        border-color: #f1c40f;
+    }
+
+    100% {
+        border-color: #e74c3c;
+    }
 }
 
 .power-up {
@@ -484,38 +600,67 @@ body {
     left: 25%;
     width: 50%;
     height: 50%;
-    border-radius: 50%; /* Circular power-ups */
+    border-radius: 50%;
+    /* Circular power-ups */
     z-index: 3;
-    animation: powerUpSpin 3s linear infinite, powerUpGlow 1.5s ease-in-out infinite alternate; /* New animations */
+    animation: powerUpSpin 3s linear infinite, powerUpGlow 1.5s ease-in-out infinite alternate;
+    /* New animations */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
+/* 
 @keyframes powerUpSpin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+} */
+
+/* @keyframes powerUpGlow {
+    from {
+        opacity: 0.8;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+
+    to {
+        opacity: 1;
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+    }
+} */
+
+.power-up-speed {
+    background-image: url('speed.svg');
+    background-size: cover;
 }
 
-@keyframes powerUpGlow {
-    from { opacity: 0.8; box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); }
-    to { opacity: 1; box-shadow: 0 0 25px rgba(255, 255, 255, 0.6); }
+.power-up-flames {
+    background-image: url('explosion.svg');
+    background-size: cover;
 }
 
-.power-up-speed { background: linear-gradient(45deg, #3498db, #2980b9); } /* Blue for speed */
-.power-up-flames { background: linear-gradient(45deg, #e74c3c, #c0392b); } /* Red for flames */
-.power-up-bombs { background: linear-gradient(45deg, #9b59b6, #8e44ad); } /* Purple for bombs */
-
+.power-up-bombs {
+    background-image: url('bombs.svg');
+    background-size: cover;
+}
 
 /* Sidebar */
 .game-sidebar {
     flex: 1;
-    min-width: 280px; /* Slightly wider sidebar */
+    min-width: 280px;
+    /* Slightly wider sidebar */
     max-width: 350px;
     display: flex;
     flex-direction: column;
-    gap: 25px; /* More space between sections */
+    gap: 25px;
+    /* More space between sections */
 }
 
-.player-stats h3, .other-players h4, .controls-help h4 {
+.player-stats h3,
+.other-players h4,
+.controls-help h4 {
     margin: 0 0 15px 0;
     color: #6a11cb;
     font-size: 1.3rem;
@@ -527,12 +672,14 @@ body {
 .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px; /* More space in grid */
+    gap: 15px;
+    /* More space in grid */
 }
 
 .stat {
     display: flex;
-    flex-direction: column; /* Stack label and value */
+    flex-direction: column;
+    /* Stack label and value */
     align-items: center;
     padding: 12px;
     background: rgba(255, 255, 255, 0.08);
@@ -561,7 +708,8 @@ body {
     margin-bottom: 10px;
     background: rgba(255, 255, 255, 0.08);
     border-radius: 8px;
-    border-left: 4px solid #6a11cb; /* Accent border */
+    border-left: 4px solid #6a11cb;
+    /* Accent border */
     transition: all 0.2s ease;
 }
 
@@ -579,8 +727,13 @@ body {
     margin-right: 8px;
 }
 
-.player-status-dot.online { background-color: #2ecc71; }
-.player-status-dot.offline { background-color: #e74c3c; }
+.player-status-dot.online {
+    background-color: #2ecc71;
+}
+
+.player-status-dot.offline {
+    background-color: #e74c3c;
+}
 
 .player-name {
     font-weight: 600;
@@ -615,9 +768,11 @@ body {
     position: fixed;
     top: 20px;
     right: 20px;
-    width: 320px; /* Slightly wider chat */
+    width: 320px;
+    /* Slightly wider chat */
     height: calc(100vh - 40px);
-    background: rgba(10, 10, 20, 0.95); /* Darker, more opaque */
+    background: rgba(10, 10, 20, 0.95);
+    /* Darker, more opaque */
     backdrop-filter: blur(25px);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -648,7 +803,8 @@ body {
     background: none;
     border: none;
     color: #e74c3c;
-    font-size: 1.8rem; /* Larger close button */
+    font-size: 1.8rem;
+    /* Larger close button */
     cursor: pointer;
     padding: 5px 10px;
     border-radius: 50%;
@@ -666,7 +822,8 @@ body {
     padding: 15px 20px;
     scroll-behavior: smooth;
     display: flex;
-    flex-direction: column-reverse; /* New messages at bottom */
+    flex-direction: column-reverse;
+    /* New messages at bottom */
 }
 
 .chat-empty {
@@ -681,14 +838,22 @@ body {
     padding: 10px 15px;
     background: rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-    border-left: 4px solid #2575fc; /* Accent border */
+    border-left: 4px solid #2575fc;
+    /* Accent border */
     word-wrap: break-word;
     animation: fadeInMessage 0.3s ease-out;
 }
 
 @keyframes fadeInMessage {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .chat-sender {
@@ -817,8 +982,13 @@ body {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Countdown screen */
@@ -828,7 +998,8 @@ body {
 }
 
 .countdown-number {
-    font-size: 5rem; /* Larger countdown */
+    font-size: 5rem;
+    /* Larger countdown */
     font-weight: bold;
     color: #e74c3c;
     margin-bottom: 15px;
@@ -837,9 +1008,20 @@ body {
 }
 
 @keyframes countdownPulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .countdown-text {
@@ -935,36 +1117,47 @@ body {
     font-size: 1.2rem;
 }
 
-.icon-winner { color: #2ecc71; }
-.icon-eliminated { color: #e74c3c; }
+.icon-winner {
+    color: #2ecc71;
+}
+
+.icon-eliminated {
+    color: #e74c3c;
+}
 
 
 /* Responsive Design */
 @media (max-width: 1200px) {
     .game-main {
         flex-direction: column;
-        align-items: center; /* Center items when stacked */
+        align-items: center;
+        /* Center items when stacked */
     }
 
     .game-grid {
-        max-width: 550px; /* Adjust max-width for smaller screens */
+        max-width: 550px;
+        /* Adjust max-width for smaller screens */
         margin: 0 auto;
     }
 
     .game-sidebar {
-        max-width: 550px; /* Allow sidebar to take more width */
+        max-width: 550px;
+        /* Allow sidebar to take more width */
         width: 100%;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid for sidebar sections */
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        /* Responsive grid for sidebar sections */
         gap: 20px;
     }
 
     .chat-container {
-        position: relative; /* Make chat flow with content */
+        position: relative;
+        /* Make chat flow with content */
         top: auto;
         right: auto;
         width: 100%;
-        height: 350px; /* Fixed height for chat on smaller screens */
+        height: 350px;
+        /* Fixed height for chat on smaller screens */
         margin-top: 30px;
         border-radius: 15px;
         box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
@@ -1000,7 +1193,8 @@ body {
     }
 
     .game-grid {
-        height: 70vw; /* Adjust grid height relative to viewport width */
+        height: 70vw;
+        /* Adjust grid height relative to viewport width */
         max-height: 450px;
         padding: 10px;
         border-radius: 10px;
@@ -1070,7 +1264,8 @@ body {
         font-size: 1.2rem;
     }
 
-    .winner-text, .loser-text {
+    .winner-text,
+    .loser-text {
         font-size: 2rem;
     }
 }
@@ -1098,7 +1293,8 @@ body {
     }
 
     .game-grid {
-        height: 90vw; /* Maximize grid size on very small screens */
+        height: 90vw;
+        /* Maximize grid size on very small screens */
         max-height: 350px;
         padding: 8px;
         gap: 1px;
@@ -1160,7 +1356,8 @@ body {
         font-size: 1rem;
     }
 
-    .winner-text, .loser-text {
+    .winner-text,
+    .loser-text {
         font-size: 1.8rem;
     }
 }
@@ -1168,7 +1365,8 @@ body {
 /* Scrollbar styling */
 ::-webkit-scrollbar {
     width: 10px;
-    height: 10px; /* For horizontal scrollbars if any */
+    height: 10px;
+    /* For horizontal scrollbars if any */
 }
 
 ::-webkit-scrollbar-track {

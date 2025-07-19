@@ -30,6 +30,7 @@ const server = http.createServer(async (req, res) => {
             '.png': 'image/png',
             '.jpg': 'image/jpeg',
             '.jpeg': 'image/jpeg',
+            '.svg': 'image/svg+xml',
             '.gif': 'image/gif'
         }[path.extname(filePath)] || 'text/plain';
 
@@ -86,7 +87,7 @@ let gameStarted = false;
 let playerConnections = new Map();
 
 wss.on('connection', (ws) => {
-    // console.log('A new player connected.');
+    console.log('A new player connected.');
 
     ws.send(JSON.stringify({
         type: 'chatHistory',
@@ -102,42 +103,54 @@ wss.on('connection', (ws) => {
                 handlePlayerJoin(ws, data.name);
             } else if (data.type === 'move') {
                 const player = getPlayerByWebSocket(ws);
+                console.log(player);
+
                 if (player && gameState === 'playing') {
                     handlePlayerMove(player, data.direction);
                 }
 
-                console.log("=====> : ", players);
-                
+                // console.log("=====> : ", players);
+
             } else if (data.type === 'placeBomb') {
                 const player = getPlayerByWebSocket(ws);
                 if (player && gameState === 'playing') {
                     handlePlaceBomb(player);
                 }
             } else if (data.type === 'leaveGame') {
+                console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+
                 const player = getPlayerByWebSocket(ws);
-                let pl_pos = player.position 
+                let pl_pos = player?.position
                 if (player) {
+                    broadcast(JSON.stringify({ type: 'gameReset' }), player.id);
                     playerConnections.delete(player.id);
                     players = players.filter(a => a.id != player.id);
                     if (players.length < 2) {
                         checkGameOver();
                     }
+                    players.map((p) => {
+                        broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
+                    })
                 }
 
                 for (play of players) {
 
                     console.log(play.position, "===>>>>", pl_pos);
-                    
 
-                    if (play.position > pl_pos) {
+
+                    if (play.position > pl_pos && !gameStarted) {
                         play.position -= 1
+
+                        play.x = playerPosition.x
+
+                        play.y = playerPosition.y
                     }
                 }
-                
+
             } else if (data.type === 'message') {
                 console.log(data);
-                
-                
+
+
                 const player = getPlayerByWebSocket(ws);
 
                 if (player) {
@@ -147,7 +160,7 @@ wss.on('connection', (ws) => {
                 // console.log("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo");
                 const player = getPlayerByWebSocket(ws);
 
-                let pl_pos = player.position 
+                let pl_pos = player.position
 
                 playerConnections.delete(player.id);
                 players = players.filter(a => a.id != player.id);
@@ -172,14 +185,15 @@ wss.on('connection', (ws) => {
 
                 for (play of players) {
 
-                    console.log(play.position, "<<<<===>>>>", pl_pos);
-                    
+                    // console
+                    // .log(play.position, "<<<<===>>>>", pl_pos);
+
 
                     if (play.position > pl_pos) {
                         play.position -= 1
                         // console.log(play);
                         const playerPosition = positions[play.position];
-                        
+
                         play.x = playerPosition.x
 
                         play.y = playerPosition.y
@@ -213,9 +227,6 @@ wss.on('connection', (ws) => {
                 })
             }
 
-            if (gameState !== 'playing') {
-                checkGameOver();
-            }
         }
     });
 
@@ -246,8 +257,8 @@ function handleChatMessage(player, messageText, ws) {
         messages.shift()
     }
 
-    console.log("---------++++++++++----------", message, player.name);
-    
+    // console.log("---------++++++++++----------", message, player.name);
+
 
     broadcast(JSON.stringify({
         type: 'newMessage',
@@ -288,10 +299,10 @@ function handlePlayerJoin(ws, name) {
         bombs: 0,
         flameSize: 1,
         speed: 1,
-        position : players.length
+        position: players.length
     };
 
-    
+
 
     players.push(player);
     playerConnections.set(playerId, ws);
@@ -350,7 +361,7 @@ function startCountdownRoom() {
 
         if (twenty_sec <= 0) {
             // console.log("checkkkkkkkkkkkkkkkkkkkkkk");
-            
+
             clearInterval(countdownTimerroom);
             startCountdown();
         }
@@ -358,24 +369,27 @@ function startCountdownRoom() {
 }
 
 function startCountdown() {
-    clearGameTimers();
     gameState = 'countdown';
     ten_sec = 10;
+    clearGameTimers();
 
-    broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}));
+    players.map(a => {
+        broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec }), a.id);
+    });
 
     countdownTimer = setInterval(() => {
         ten_sec--;
-        broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec}));
+        players.map(a => {
+            broadcast(JSON.stringify({ type: 'countdown', seconds: ten_sec }), a.id);
+        });
         //console.log(players.length);
-        
+
         if (players.length < 2) {
             checkGameOver()
-            return 
+            return
         }
         if (ten_sec <= 0) {
             clearInterval(countdownTimer);
-            gameStarted = true
             startGame();
         }
     }, 1000);
@@ -383,7 +397,7 @@ function startCountdown() {
 
 function startGame() {
     gameState = 'playing';
-    gameStarted = true;
+    gameStarted = false;
     players.map(a => {
         broadcast(JSON.stringify({ type: 'gameStart', board, players, bombs, powerUps, players }), a.id);
     });
@@ -397,6 +411,10 @@ function clearGameTimers() {
     if (countdownTimer) {
         clearInterval(countdownTimer);
         countdownTimer = null;
+    }
+    if (countdownTimerroom) {
+        clearInterval(countdownTimerroom)
+        countdownTimerroom = null;
     }
 }
 
@@ -461,14 +479,29 @@ function handlePlayerMove(player, direction) {
     let newX = player.x;
     let newY = player.y;
 
-    if (direction === 'up' && checkTile(newX, newY - 1, player)) newY -= 1;
-    else if (direction === 'down' && checkTile(newX, newY + 1, player)) newY += 1;
-    else if (direction === 'left' && checkTile(newX - 1, newY, player)) newX -= 1;
-    else if (direction === 'right' && checkTile(newX + 1, newY, player)) newX += 1;
+    if (direction === 'up') {
+        if (checkTile(newX, newY - .1, player)) newY -= .1;
+        else if (checkTile(newX + 0.2, newY - 0.1, player)) newX += 0.2, newY -= 0.1;
+        else if (checkTile(newX - 0.2, newY - 0.1, player)) newX -= 0.2, newY -= 0.1;
+    } else if (direction === 'down') {
+        if (checkTile(newX, newY + .1, player)) newY += .1;
+        else if (checkTile(newX + 0.2, newY + 0.1, player)) newX += 0.2, newY += 0.1;
+        else if (checkTile(newX - 0.2, newY + 0.1, player)) newX -= 0.2, newY += 0.1;
+    } else if (direction === 'left') {
+        if (checkTile(newX - .1, newY, player)) newX -= .1;
+        else if (checkTile(newX - 0.1, newY + 0.2, player)) newX -= 0.1, newY += 0.2;
+        else if (checkTile(newX - 0.1, newY - 0.2, player)) newX -= 0.1, newY -= 0.2;
+    } else if (direction === 'right') {
+        if (checkTile(newX + .1, newY, player)) newX += .1;
+        else if (checkTile(newX + 0.1, newY + 0.2, player)) newX += 0.1, newY += 0.2;
+        else if (checkTile(newX + 0.1, newY - 0.2, player)) newX += 0.1, newY -= 0.2;
+    }
+
+    console.log(newX, newY);
 
     if (newX !== player.x || newY !== player.y) {
-        player.x = newX;
-        player.y = newY;
+        player.x = parseFloat((newX).toFixed(2));
+        player.y = parseFloat((newY).toFixed(2));
 
         checkPowerUpCollection(player);
 
@@ -476,15 +509,27 @@ function handlePlayerMove(player, direction) {
     }
 }
 
-function checkTile(x, y, player) {
-    if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) return false;
+function checkTile(x, y) {
+    x = parseFloat((x).toFixed(2));
+    y = parseFloat((y).toFixed(2));
+    const diffX = parseFloat((Math.abs(x - Math.round(x))).toFixed(2));
+    const diffY = parseFloat((Math.abs(y - Math.round(y))).toFixed(2));
 
-    if (board[y][x] === 2) return false;
+    console.log('abs', Math.abs(x - Math.round(x)));
+    console.log('round', Math.round(x));
+    console.log("before", x, y);
 
-    if (board[y][x] === 1 && !player.powerUps.blockPass) return false;
+
+    if (diffX < 0.08) x = Math.round(x);
+    if (diffY < 0.08) y = Math.round(y);
+    console.log("after", x, y);
+
+    if (x < 1 || x >= l || y < 1 || y >= gridSize - 1) return false;
+
+    if (board[y][x] === 2 || board[y][x] === 1) return false;
 
     const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
-    if (hasBomb && !player.powerUps.bombPass) return false;
+    if (hasBomb) return false;
 
     return true;
 }
@@ -643,15 +688,21 @@ function dropPowerUpOnDeath(player) {
 function checkGameOver() {
     const alivePlayers = players.filter(p => p.alive);
     //console.log(players.length, "----++++++");
-    
+
     if (alivePlayers.length <= 1) {
         gameState = 'ended';
         const winner = alivePlayers.length === 1 ? alivePlayers[0] : null;
-        broadcast(JSON.stringify({
-            type: 'gameOver',
-            winner: winner
-        }));
-        
+        players.map(a => {
+            broadcast(JSON.stringify({
+                type: 'gameOver',
+                winner: winner
+            }), a.id);
+        });
+        // broadcast(JSON.stringify({
+        //     type: 'gameOver',
+        //     winner: winner
+        // }));
+
         setTimeout(() => {
             resetGame();
         }, 5000);
