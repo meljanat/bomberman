@@ -6,10 +6,11 @@ let animationId = null;
 let lastFrameTime = 0;
 let frameCount = 0;
 let fpsDisplay = 0;
-let check = false;
+let TILE_SIZE = 60;
+let movementInterval = null;
 
 const initialState = {
-    screen: 'menu', // 'menu', 'waiting', 'countdown', 'game', 'gameOver'
+    screen: 'menu',
     playerName: '',
     errorMessage: '',
     statusMessage: '',
@@ -32,17 +33,6 @@ const initialState = {
     currentPlayer: null,
     fps: 0
 };
-
-
-// let item = localStorage.getItem('bomberman')
-
-// console.log(item);
-
-// if (item) {
-//     console.log('there is an active tab');
-    
-//     return;
-// }
 
 const reducers = {
     updatePlayerName: (state, name) => ({
@@ -106,25 +96,17 @@ const reducers = {
     }),
 
     connectToServer: (state) => {
-        // console.log('Attempting to connect to server...');
-
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            // console.log('Already connected');
-
+        if (socket && socket.readyState === WebSocket.OPEN)
             return { ...state, connected: true };
-        }
 
         if (socket && socket.readyState === WebSocket.CONNECTING) {
-            // console.log('Already connecting');
             return { ...state, connecting: true };
         }
-
         try {
             socket = new WebSocket('ws://localhost:8888');
 
             socket.addEventListener('open', () => {
-                localStorage.setItem('bomberman','active_tab')
-                // console.log('Connected to server');
+                localStorage.setItem('bomberman', 'active_tab')
                 if (window.appEmit) {
                     window.appEmit('connectionEstablished');
                 }
@@ -132,14 +114,12 @@ const reducers = {
 
             socket.addEventListener('message', (event) => {
                 const data = JSON.parse(event.data);
-                // console.log('Received message:', data);
                 if (window.appEmit) {
                     window.appEmit('handleServerMessage', data);
                 }
             });
 
             socket.addEventListener('close', () => {
-                // console.log('Connection closed');
                 localStorage.removeItem('bomberman')
 
                 if (window.appEmit) {
@@ -149,7 +129,7 @@ const reducers = {
 
             socket.addEventListener('error', (error) => {
                 localStorage.removeItem('bomberman')
-                // console.error('WebSocket error:', error);
+                console.error('WebSocket error:', error);
                 if (window.appEmit) {
                     window.appEmit('setError', 'Failed to connect to server');
                 }
@@ -199,7 +179,6 @@ const reducers = {
                 statusMessage: 'Joining game...'
             };
         } else {
-            // console.error('Socket not ready, state:', socket ? socket.readyState : 'no socket');
             return {
                 ...state,
                 errorMessage: 'Not connected to server. Please wait and try again.'
@@ -208,7 +187,6 @@ const reducers = {
     },
 
     handleServerMessage: (state, data) => {
-        // console.log('Handling server message:', data);
         switch (data.type) {
             case 'error':
                 return {
@@ -409,8 +387,34 @@ let keyHandler = null;
 let keysPressed = new Set();
 
 const keyUpHandler = (event) => {
-    keysPressed.delete(event.key);
+    keysPressed.delete(event.key.toLowerCase());
+
+    // Stop movement if no movement keys are pressed
+    if (!hasMovementKey() && movementInterval) {
+        clearInterval(movementInterval);
+        movementInterval = null;
+    }
 };
+
+function hasMovementKey() {
+    const movementKeys = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'z', 's', 'q', 'd'];
+    return Array.from(keysPressed).some(key => movementKeys.includes(key));
+}
+
+function getDirectionFromKeys() {
+    let el = document.getElementsByClassName('.tile');
+    if (!el) {
+        const rect = el.getBoundingClientRect();
+        console.log('Width:', rect.width);
+        console.log('Height:', rect.height);
+    }
+    if (keysPressed.has('arrowup') || keysPressed.has('z')) return 'up';
+    if (keysPressed.has('arrowdown') || keysPressed.has('s')) return 'down';
+    if (keysPressed.has('arrowleft') || keysPressed.has('q')) return 'left';
+    if (keysPressed.has('arrowright') || keysPressed.has('d')) return 'right';
+    return null;
+}
+
 function setupKeyboardControls(emit) {
     if (keyHandler) {
         document.removeEventListener('keydown', keyHandler);
@@ -421,52 +425,40 @@ function setupKeyboardControls(emit) {
         if (document.activeElement && document.activeElement.tagName === 'INPUT') {
             return;
         }
-
-        if (keysPressed.has(event.key)) return;
-        keysPressed.add(event.key);
-
-        let direction = null;
-
-        switch (event.key) {
-            case 'ArrowUp':
-            case 'z':
-            case 'Z':
-                direction = 'up';
-                break;
-            case 'ArrowDown':
-            case 's':
-            case 'S':
-                direction = 'down';
-                break;
-            case 'ArrowLeft':
-            case 'q':
-            case 'Q':
-                direction = 'left';
-                break;
-            case 'ArrowRight':
-            case 'd':
-            case 'D':
-                direction = 'right';
-                break;
-            case ' ':
-                event.preventDefault();
-                emit('placeBomb');
-                return;
-            case 'c':
-            case 'C':
-                event.preventDefault();
-                emit('toggleChat');
-                return;
-        }
-
-        if (direction) {
+        const key = event.key.toLowerCase();
+        if (key === ' ') {
             event.preventDefault();
-            emit('sendMove', direction);
+            emit('placeBomb');
+            return;
+        }
+        if (key === 'c') {
+            event.preventDefault();
+            emit('toggleChat');
+            return;
+        }
+        const movementKeys = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'z', 's', 'q', 'd'];
+        if (movementKeys.includes(key)) {
+            event.preventDefault();
+
+            if (!keysPressed.has(key)) {
+                keysPressed.add(key);
+
+                // Start continuous movement if not already started
+                if (!movementInterval) {
+                    movementInterval = setInterval(() => {
+                        const direction = getDirectionFromKeys();
+                        if (direction) {
+                            emit('sendMove', direction);
+                        } else {
+                            clearInterval(movementInterval);
+                            movementInterval = null;
+                        }
+                    }, 50); // Send movement every 50ms for smooth movement
+                }
+            }
         }
     };
 
-
-    window.keyUpHandler = keyUpHandler;
     document.addEventListener('keydown', keyHandler);
     document.addEventListener('keyup', keyUpHandler);
 }
@@ -474,9 +466,14 @@ function setupKeyboardControls(emit) {
 function removeKeyboardControls() {
     if (keyHandler) {
         document.removeEventListener('keydown', keyHandler);
-        document.removeEventListener('keyup', window.keyUpHandler);
+        document.removeEventListener('keyup', keyUpHandler);
         keyHandler = null;
         keysPressed.clear();
+
+        if (movementInterval) {
+            clearInterval(movementInterval);
+            movementInterval = null;
+        }
     }
 }
 
@@ -510,15 +507,9 @@ function stopGameLoop() {
 }
 
 function renderChatMessages(state) {
-
-    //console.log(state);
-
-
     if (!state.messages || state.messages.length === 0) {
-
         return CreateElement('div', { class: 'chat-empty' }, ['No messages yet...']);
     }
-
     return CreateElement('div', { class: 'chat-messages' },
         state.messages.map(msg =>
             CreateElement('div', { class: 'chat-message' }, [
@@ -531,7 +522,6 @@ function renderChatMessages(state) {
 
 function renderChat(state, emit) {
     if (!state.showChat) return null;
-
     return CreateElement('div', { class: 'chat-container' }, [
         CreateElement('div', { class: 'chat-header' }, [
             CreateElement('h3', {}, ['Chat']),
@@ -572,8 +562,8 @@ function renderChat(state, emit) {
                             input.value = '';
                         }
                     }
-                    }
-                }, ['Send'])
+                }
+            }, ['Send'])
         ])
     ]);
 }
@@ -626,7 +616,6 @@ function renderMenu(state, emit) {
                     class: 'btn btn-secondary',
                     on: {
                         click: () => {
-                            // console.log("vvvvvvvvvvvvvvvvvvvvvvvvv"),
                             emit('updatePlayerName', '')
                         }
                     }
@@ -710,11 +699,11 @@ function renderWaiting(state, emit) {
                             click: (e) => {
                                 const input = e.target.parentElement.querySelector('input');
                                 const message = input.value.trim();
-                                
+
                                 console.log(input);
                                 console.log(message);
-                                
-                                
+
+
                                 if (message) {
                                     emit('sendChatMessage', message);
                                     input.value = '';
@@ -771,15 +760,6 @@ function renderGameTile(state, i, j) {
         }
     });
 
-    state.players.forEach(player => {
-        if (player.lives > 0 && player.x === j && player.y === i) {
-            children.push(CreateElement('div', {
-                class: `player player-${player.id}${player.name === state.playerName ? ' current-player' : ''}`,
-                title: player.name
-            }));
-        }
-    });
-
     state.bombs.forEach(bomb => {
         if (bomb.x === j && bomb.y === i) {
             children.push(CreateElement('div', {
@@ -819,6 +799,30 @@ function renderPlayerStats(state) {
     ]);
 }
 
+function renderPlayers(state) {
+    return state.players.map((player, i) => {
+        if (player.lives <= 0) return null;
+
+        const pixelX = player.pixelX !== undefined ? player.pixelX : (player.x * TILE_SIZE);
+        const pixelY = player.pixelY !== undefined ? player.pixelY : (player.y * TILE_SIZE);
+
+        return CreateElement('div', {
+            class: `player-${i+1}`,
+            style: {
+                position: 'absolute',
+                left: `${(pixelX + 10)-(60-TILE_SIZE)}px`,
+                top: `${(pixelY + 10)-(60-TILE_SIZE)}px`,
+                width: `${TILE_SIZE - 10}px`,
+                height: `${TILE_SIZE - 10}px`,
+                transform: 'none',
+                transition: 'left 0.05s linear, top 0.05s linear',
+                zIndex: '10'
+            },
+            title: player.name
+        });
+    }).filter(Boolean);
+}
+
 function renderGame(state, emit) {
     setupKeyboardControls(emit);
     startGameLoop(emit);
@@ -856,7 +860,30 @@ function renderGame(state, emit) {
         ]),
 
         CreateElement('div', { class: 'game-main' }, [
-            CreateElement('div', { class: 'game-grid' }, gridChildren),
+            CreateElement('div', {
+                class: 'game-grid-container',
+                style: {
+                    position: 'relative',
+                    width: `${(state.gridSize * TILE_SIZE) + 20}px`,
+                    height: `${(state.gridSize * TILE_SIZE) + 20}px`,
+                    margin: '0 auto',
+                    border: '2px solid #333',
+                    overflow: 'hidden'
+                }
+            }, [
+                CreateElement('div', {
+                    class: 'game-grid',
+                    style: {
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${state.gridSize}, ${TILE_SIZE}px)`,
+                        gridTemplateRows: `repeat(${state.gridSize}, ${TILE_SIZE}px)`,
+                        gap: '0',
+                        width: '100%',
+                        height: '100%'
+                    }
+                }, gridChildren),
+                ...renderPlayers(state)
+            ]),
 
             CreateElement('div', { class: 'game-sidebar' }, [
                 renderPlayerStats(state),
@@ -887,6 +914,7 @@ function renderGame(state, emit) {
         renderChat(state, emit)
     ]);
 }
+
 
 function renderGameOver(state, emit) {
     removeKeyboardControls();
@@ -974,4 +1002,18 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('beforeunload', () => {
     stopGameLoop();
     removeKeyboardControls();
+});
+
+window.addEventListener('resize', () => {
+    const el = document.querySelector('.tile.wall');
+    console.log(el, 'Resize event triggered');
+    
+    if (el) {
+        const width = el.offsetWidth;
+        const height = el.offsetHeight;
+        console.log('Width:', width);
+        console.log('Height:', height);
+        TILE_SIZE = width;
+        socket.send(JSON.stringify({ type: 'resize', width, height }));
+    }
 });
