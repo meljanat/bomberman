@@ -59,7 +59,7 @@ let countdownTimerroom = null;
 let ten_sec = 10;
 let twenty_sec = 20;
 let TILE_SIZE = 60;
-let MOVE_SPEED = 5;
+let MOVE_SPEED = 6;
 let messages = [];
 let move_bomb = false;
 let board = [
@@ -309,7 +309,7 @@ function handlePlayerJoin(ws, name) {
 function startCountdownRoom() {
     clearGameTimers();
     gameState = 'waiting';
-    twenty_sec = 5;
+    twenty_sec = 20;
     players.map(a => {
         broadcast(JSON.stringify({ type: 'waiting', secondsroom: twenty_sec, countdownroom: twenty_sec, players }), a.id);
     });
@@ -330,7 +330,7 @@ function startCountdownRoom() {
 
 function startCountdown() {
     gameState = 'countdown';
-    ten_sec = 2;
+    ten_sec = 10;
     clearGameTimers();
 
     players.map(a => {
@@ -484,14 +484,14 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
 
             const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
             if (hasBomb) {
-                setTimeout(() => {
-                    move_bomb = true;
-                }, 1000);
-                if (move_bomb) {
-                    move_bomb = false;
-                    console.log(`Tile (${x}, ${y}) has a bomb`);
-                    return false;
-                }
+                // setTimeout(() => {
+                //     move_bomb = true;
+                // }, 1000);
+                // if (move_bomb) {
+                //     move_bomb = false;
+                //     console.log(`Tile (${x}, ${y}) has a bomb`);
+                // }
+                    return true;
             }
 
             const hasOtherPlayer = players.some(p =>
@@ -581,9 +581,7 @@ function explodeBomb(bomb) {
 
             if (explX >= 0 && explX < gridSize && explY >= 0 && explY < gridSize) {
                 if (board[explY][explX] === 2) break;
-
                 explosions.push({ x: explX, y: explY });
-
                 if (board[explY][explX] === 1) {
                     board[explY][explX] = 0;
 
@@ -610,6 +608,9 @@ function explodeBomb(bomb) {
             if (hitPlayer.lives <= 0) {
                 hitPlayer.alive = false;
                 dropPowerUpOnDeath(hitPlayer);
+                broadcast(JSON.stringify({type: 'gameReset'}), hitPlayer.id)
+                players = players.filter(a => a.id != hitPlayer.id);
+                playerConnections.delete(hitPlayer.id)              
             } else {
                 const startPos = positions[hitPlayer.position % positions.length];
                 hitPlayer.x = startPos.x;
