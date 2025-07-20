@@ -421,7 +421,7 @@ body {
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background-image: url('./bomb.gif');
+    background-image: url('./bomb.png');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -876,7 +876,7 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
     .game-container {
         padding: 10px;
     }
@@ -890,7 +890,6 @@ body {
         justify-content: center;
     }
     
-    /* Scale down tiles for tablets */
     .game-grid {
         grid-template-columns: repeat(11, 50px);
         grid-template-rows: repeat(11, 50px);
@@ -973,7 +972,6 @@ body {
         font-size: 3rem;
     }
     
-    /* Further scale down for small phones but keep minimum readable size */
     .game-grid {
         grid-template-columns: repeat(11, 40px);
         grid-template-rows: repeat(11, 40px);
@@ -1009,7 +1007,6 @@ body {
 }
 
 @media (max-width: 360px) {
-    /* Minimum size for very small screens */
     .game-grid {
         grid-template-columns: repeat(11, 35px);
         grid-template-rows: repeat(11, 35px);
@@ -1044,7 +1041,6 @@ body {
 }
 
 @media (max-width: 240px) {
-    /* Minimum size for very small screens */
     .game-grid {
         grid-template-columns: repeat(11, 20px);
         grid-template-rows: repeat(11, 20px);
@@ -1076,7 +1072,7 @@ body {
         height: 6px;
         font-size: 6px;
     }
-}
+} */
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {

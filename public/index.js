@@ -53,8 +53,6 @@ const reducers = {
 
     sendChatMessage: (state, message) => {
         const messageToSend = message || state.chatInput;
-        // console.log("====>>>>> ", state,"<<<<<=====",messageToSend );
-
         if (socket && socket.readyState === WebSocket.OPEN && messageToSend.trim()) {
             socket.send(JSON.stringify({
                 type: 'message',
@@ -162,8 +160,6 @@ const reducers = {
     }),
 
     startGame: (state) => {
-        // console.log('Starting game with name:', state.playerName);
-
         if (!state.playerName.trim()) {
             return {
                 ...state,
@@ -330,7 +326,10 @@ const reducers = {
                 return {
                     ...initialState,
                     connected: state.connected,
-                    playerName: state.playerName
+                    playerName: state.playerName,
+                    statusMessage: 'Game has been reset. You can join a new game.',
+                    errorMessage: '',
+                    screen: 'menu',
                 };
 
             case 'chatHistory':
@@ -366,6 +365,10 @@ const reducers = {
     resetGame: (state) => ({
         ...initialState,
         connected: state.connected,
+        playerName: state.playerName,
+        statusMessage: 'Game has been reset. You can join a new game.',
+        errorMessage: '',
+        screen: 'menu',
         messages: []
     }),
 
@@ -580,8 +583,8 @@ function renderMenu(state, emit) {
             CreateElement('p', { class: 'subtitle' }, ['Enter your name to join the battle!']),
 
             CreateElement('div', { class: 'message-container'}, [
-                state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
-                state.statusMessage ? CreateElement('div', { class: 'status-message' }, [state.statusMessage]) : null,
+                state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage].filter(Boolean)) : null,
+                state.statusMessage ? CreateElement('div', { class: 'status-message' }, [state.statusMessage].filter(Boolean)) : null,
             ].filter(Boolean)),
 
             CreateElement('div', { class: 'input-group' }, [
@@ -931,11 +934,11 @@ function renderGameOver(state, emit) {
                     class: isWinner ? 'winner-text' : 'loser-text'
                 }, [
                     isWinner ? '🎉 You Won! 🎉' : `Winner: ${winnerName}`
-                ]),
+                ].filter(Boolean)),
                 isWinner ?
                     CreateElement('p', { class: 'winner-message' }, ['Congratulations! You are the last player standing!']) :
                     CreateElement('p', { class: 'loser-message' }, ['Better luck next time!'])
-            ]),
+            ].filter(Boolean)),
             CreateElement('div', { class: 'final-stats' }, [
                 CreateElement('h3', {}, ['Final Results']),
                 ...state.players.map(player =>
@@ -943,9 +946,9 @@ function renderGameOver(state, emit) {
                         class: `final-player ${player.alive ? 'winner' : 'eliminated'}`
                     }, [
                         `${player.alive ? '👑' : '💀'} ${player.name} - ${player.alive ? 'Winner' : 'Eliminated'} (Lives: ${player.lives})`
-                    ])
+                    ].filter(Boolean))
                 )
-            ]),
+            ].filter(Boolean)),
             CreateElement('div', { class: 'button-group' }, [
                 CreateElement('button', {
                     class: 'btn btn-primary',

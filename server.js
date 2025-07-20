@@ -96,7 +96,12 @@ wss.on('connection', (ws) => {
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
+
             if (data.type === 'start') {
+                console.log('Received start message:', data);
+                console.log('Player name:', playerConnections);
+                
+                
                 handlePlayerJoin(ws, data.name);
             } else if (data.type === 'move') {
                 const player = getPlayerByWebSocket(ws);
@@ -663,11 +668,18 @@ function checkGameOver() {
                 winner: winner
             }), a.id);
         });
-        resetGame();
+        console.log('Game over. Winner:', winner ? winner.name : 'None');
+        setTimeout(() => {
+            resetGame();
+        }, 2000);
     }
 }
 
 function resetGame() {
+    clearGameTimers();
+    playerConnections.clear();
+    broadcast(JSON.stringify({ type: 'gameReset', players, board, bombs, powerUps }));
+    gameStarted = false;
     players = [];
     bombs = [];
     powerUps = [];
@@ -694,7 +706,13 @@ function resetGame() {
         [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
     ];
-    gameStarted = false;
+    positions = [
+        { x: 1, y: 1 },
+        { x: 9, y: 9 },
+        { x: 1, y: 9 },
+        { x: 9, y: 1 },
+    ];
+    console.log('Game has been reset.');
 }
 const PORT = 8888;
 server.listen(PORT, () => {
