@@ -61,6 +61,7 @@ let twenty_sec = 20;
 let TILE_SIZE = 60;
 let MOVE_SPEED = 5;
 let messages = [];
+let move_bomb = false;
 let board = [
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
     [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
@@ -464,9 +465,6 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
     const topTile = Math.floor(playerTop / TILE_SIZE);
     const bottomTile = Math.floor((playerBottom - 1) / TILE_SIZE);
 
-    console.log(`Player bounds: (${playerLeft}, ${playerTop}) to (${playerRight}, ${playerBottom})`);
-    console.log(`Checking tiles from (${leftTile}, ${topTile}) to (${rightTile}, ${bottomTile})`);
-
     for (let x = leftTile; x <= rightTile; x++) {
         for (let y = topTile; y <= bottomTile; y++) {
             if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) {
@@ -481,8 +479,14 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
 
             const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
             if (hasBomb) {
-                console.log(`Tile (${x}, ${y}) has a bomb`);
-                return true;
+                setTimeout(() => {
+                    move_bomb = true;
+                }, 1000);
+                if (move_bomb) {
+                    move_bomb = false;
+                    console.log(`Tile (${x}, ${y}) has a bomb`);
+                    return false;
+                }
             }
 
             const hasOtherPlayer = players.some(p =>
