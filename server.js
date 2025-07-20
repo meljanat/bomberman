@@ -56,10 +56,8 @@ let gameState = 'waiting';
 let gameStartTimer = null;
 let countdownTimer = null;
 let countdownTimerroom = null;
-let ten_sec = 5;
-let twenty_sec = 5;
-// const el = document.querySelector('#');
-// const rect = el.getBoundingClientRect();
+let ten_sec = 10;
+let twenty_sec = 20;
 let TILE_SIZE = 60;
 let MOVE_SPEED = 5;
 let messages = [];
@@ -89,8 +87,6 @@ let gameStarted = false;
 let playerConnections = new Map();
 
 wss.on('connection', (ws) => {
-    // console.log('A new player connected.');
-
     ws.send(JSON.stringify({
         type: 'chatHistory',
         messages: messages
@@ -163,23 +159,14 @@ wss.on('connection', (ws) => {
                         broadcast(JSON.stringify({ type: 'playerLeft', players }), p.id);
                     });
                 }
-
                 for (play of players) {
-
-                    // console
-                    // .log(play.position, "<<<<===>>>>", pl_pos);
-
-
                     if (pl_pos && play.position > pl_pos && gameState != 'playing') {
                         play.position -= 1
                         const playerPosition = positions[play.position];
-
                         play.x = playerPosition.x
-
                         play.y = playerPosition.y
                     }
                 }
-
             } else if (data.type === 'resize') {
                 TILE_SIZE = data.width
                 console.log(TILE_SIZE);
@@ -440,8 +427,6 @@ function broadcast(message, id) {
 function handlePlayerMove(player, direction) {
     let newX = player.pixelX !== undefined ? player.pixelX : (player.x * TILE_SIZE);
     let newY = player.pixelY !== undefined ? player.pixelY : (player.y * TILE_SIZE);
-    console.log(`Player ${player.name} is moving ${direction} from (${newX}, ${newY})`);
-    
     const moveDistance = MOVE_SPEED * player.speed;
 
     if (direction === 'up') newY -= moveDistance;
@@ -456,7 +441,7 @@ function handlePlayerMove(player, direction) {
     if (checkTileAdvanced(player, newX, newY)) {
         player.pixelX = newX;
         player.pixelY = newY;
-        
+
         const centerX = newX + (playerSize / 2);
         const centerY = newY + (playerSize / 2);
         player.x = Math.floor(centerX / TILE_SIZE);
@@ -473,34 +458,34 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
     const playerRight = newPixelX + playerSize;
     const playerTop = newPixelY;
     const playerBottom = newPixelY + playerSize;
-    
+
     const leftTile = Math.floor(playerLeft / TILE_SIZE);
     const rightTile = Math.floor((playerRight - 1) / TILE_SIZE);
     const topTile = Math.floor(playerTop / TILE_SIZE);
     const bottomTile = Math.floor((playerBottom - 1) / TILE_SIZE);
-    
+
     console.log(`Player bounds: (${playerLeft}, ${playerTop}) to (${playerRight}, ${playerBottom})`);
     console.log(`Checking tiles from (${leftTile}, ${topTile}) to (${rightTile}, ${bottomTile})`);
-    
+
     for (let x = leftTile; x <= rightTile; x++) {
         for (let y = topTile; y <= bottomTile; y++) {
             if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) {
                 console.log(`Tile (${x}, ${y}) is outside grid bounds`);
                 return false;
             }
-            
+
             if (board[y][x] === 1 || board[y][x] === 2) {
                 console.log(`Tile (${x}, ${y}) is a wall/block (value: ${board[y][x]})`);
                 return false;
             }
-            
+
             const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
             if (hasBomb) {
                 console.log(`Tile (${x}, ${y}) has a bomb`);
                 return true;
             }
-            
-            const hasOtherPlayer = players.some(p => 
+
+            const hasOtherPlayer = players.some(p =>
                 p.id !== player.id && p.x === x && p.y === y
             );
             if (hasOtherPlayer) {
@@ -509,7 +494,7 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
             }
         }
     }
-    
+
     return true;
 }
 
@@ -674,9 +659,7 @@ function checkGameOver() {
                 winner: winner
             }), a.id);
         });
-        setTimeout(() => {
-            resetGame();
-        }, 5000);
+        resetGame();
     }
 }
 
@@ -692,6 +675,8 @@ function resetGame() {
     ten_sec = 10;
     twenty_sec = 20;
     messages = [];
+    TILE_SIZE = 60;
+    MOVE_SPEED = 5;
     board = [
         [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
         [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
