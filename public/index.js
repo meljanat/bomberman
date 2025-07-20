@@ -579,7 +579,7 @@ function renderMenu(state, emit) {
             CreateElement('h1', { class: 'welcome-title' }, ['💣 Bomberman Game 💣']),
             CreateElement('p', { class: 'subtitle' }, ['Enter your name to join the battle!']),
 
-            CreateElement('div', { class: 'message-container' }, [
+            CreateElement('div', { class: 'message-container'}, [
                 state.errorMessage ? CreateElement('div', { class: 'error-message' }, [state.errorMessage]) : null,
                 state.statusMessage ? CreateElement('div', { class: 'status-message' }, [state.statusMessage]) : null,
             ].filter(Boolean)),
@@ -807,13 +807,13 @@ function renderPlayers(state) {
         const pixelY = player.pixelY !== undefined ? player.pixelY : (player.y * TILE_SIZE);
 
         return CreateElement('div', {
-            class: `player-${i+1}`,
+            class: `player-${i + 1}`,
             style: {
                 position: 'absolute',
-                left: `${(pixelX + 10)-(60-TILE_SIZE)}px`,
-                top: `${(pixelY + 10)-(60-TILE_SIZE)}px`,
-                width: `${TILE_SIZE - 10}px`,
-                height: `${TILE_SIZE - 10}px`,
+                left: `${(pixelX + 7)}px`,
+                top: `${(pixelY + 7)}px`,
+                width: `${TILE_SIZE}px`,
+                height: `${TILE_SIZE}px`,
                 transform: 'none',
                 transition: 'left 0.05s linear, top 0.05s linear',
                 zIndex: '10'
@@ -1007,7 +1007,7 @@ window.addEventListener('beforeunload', () => {
 window.addEventListener('resize', () => {
     const el = document.querySelector('.tile.wall');
     console.log(el, 'Resize event triggered');
-    
+
     if (el) {
         const width = el.offsetWidth;
         const height = el.offsetHeight;

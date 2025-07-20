@@ -560,7 +560,7 @@ function handlePlaceBomb(player) {
 
     setTimeout(() => {
         explodeBomb(bomb);
-    }, 1000);
+    }, 2000);
 }
 
 function explodeBomb(bomb) {
