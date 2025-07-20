@@ -469,12 +469,12 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
     for (let x = leftTile; x <= rightTile; x++) {
         for (let y = topTile; y <= bottomTile; y++) {
             if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) {
-                console.log(`Tile (${x}, ${y}) is outside grid bounds`);
+                // console.log(`Tile (${x}, ${y}) is outside grid bounds`);
                 return false;
             }
 
             if (board[y][x] === 1 || board[y][x] === 2) {
-                console.log(`Tile (${x}, ${y}) is a wall/block (value: ${board[y][x]})`);
+                // console.log(`Tile (${x}, ${y}) is a wall/block (value: ${board[y][x]})`);
                 return false;
             }
 
@@ -485,18 +485,18 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
                 }, 1000);
                 if (move_bomb) {
                     move_bomb = false;
-                    console.log(`Tile (${x}, ${y}) has a bomb`);
+                    // console.log(`Tile (${x}, ${y}) has a bomb`);
                     return false;
                 }
             }
 
-            const hasOtherPlayer = players.some(p =>
-                p.id !== player.id && p.x === x && p.y === y
-            );
-            if (hasOtherPlayer) {
-                console.log(`Tile (${x}, ${y}) has another player`);
-                return false;
-            }
+            // const hasOtherPlayer = players.some(p =>
+            //     p.id !== player.id && p.x === x && p.y === y
+            // );
+            // if (hasOtherPlayer) {
+            //     console.log(`Tile (${x}, ${y}) has another player`);
+            //     return false;
+            // }
         }
     }
 
@@ -606,6 +606,10 @@ function explodeBomb(bomb) {
             if (hitPlayer.lives <= 0) {
                 hitPlayer.alive = false;
                 dropPowerUpOnDeath(hitPlayer);
+                broadcast(JSON.stringify({type:'gameReset' }), hitPlayer.id)
+                players = players.filter(p => p.id != hitPlayer.id)
+                playerConnections.delete(hitPlayer.id)
+
             } else {
                 const startPos = positions[hitPlayer.position % positions.length];
                 hitPlayer.x = startPos.x;
