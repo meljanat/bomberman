@@ -240,7 +240,7 @@ const appEmit = (actionType, payload) => {
                         ...currentState,
                         players: data.players,
                         powerUps: data.powerUps,
-                        currentPlayer: data.players.find(p => p.name === currentState.playerName)
+                        currentPlayer: data.players.resetGamefind(p => p.name === currentState.playerName)
                     };
                     break;
                 case 'newMessage':
@@ -263,7 +263,9 @@ const appEmit = (actionType, payload) => {
                     newState = {
                         ...initialState,
                         connected: currentState.connected,
-                        playerName: currentState.playerName
+                        playerName: currentState.playerName,
+                        screen: 'menu',
+                        statusMessage: 'Game reset ..., You can join to play again',
                     };
                     break;
                 case 'chatHistory':
@@ -290,9 +292,6 @@ const appEmit = (actionType, payload) => {
                 connected: currentState.connected,
                 messages: []
             };
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ type: 'resetGameRequest' }));
-            }
             break;
         case 'leaveGame':
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -341,7 +340,6 @@ function setupKeyboardControls(emitFn) {
             return;
         }
 
-        if (keysPressed.has(event.key)) return;
         keysPressed.add(event.key);
 
         let direction = null;
@@ -379,6 +377,7 @@ function setupKeyboardControls(emitFn) {
         }
 
         if (direction) {
+            console.log(event.key);
             event.preventDefault();
             emitFn('sendMove', direction);
         }
@@ -579,7 +578,7 @@ function renderWaiting(state, emitFn) {
                     class: 'btn btn-secondary',
                     on: {
                         click: () => {
-                            emitFn('resetGame');
+                            // emitFn('resetGame');
                             emitFn('leaveRoom');
                         },
                     }
@@ -724,7 +723,7 @@ function renderGame(state, emitFn) {
                 class: `player player-${player.id}${player.name === state.playerName ? ' current-player' : ''}`,
                 title: player.name,
                 key: `player-${player.id}`,
-                style: `transform: translate(${player.x * 32}px, ${player.y * 32}px)`
+                style: `transform: translate(${player.pixelX}px, ${player.pixelY}px)`
             }));
         }
     });

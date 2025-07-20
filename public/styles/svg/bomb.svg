@@ -1,0 +1,15 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bomb body -->
+  <circle cx="32" cy="36" r="20" fill="#2f2f2f" stroke="#000" stroke-width="3"/>
+
+  <!-- Fuse cap -->
+  <rect x="28" y="12" width="8" height="10" rx="2" fill="#555" stroke="#000" stroke-width="2"/>
+
+  <!-- Fuse -->
+  <path d="M32 12 Q34 6, 40 6" stroke="#a52a2a" stroke-width="2" fill="none"/>
+
+  <!-- Spark -->
+  <circle cx="40" cy="6" r="2" fill="orange"/>
+  <line x1="38" y1="4" x2="42" y2="8" stroke="red" stroke-width="1"/>
+  <line x1="42" y1="4" x2="38" y2="8" stroke="red" stroke-width="1"/>
+</svg>

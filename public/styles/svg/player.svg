@@ -1,0 +1,28 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shadow -->
+  <ellipse cx="32" cy="56" rx="12" ry="4" fill="rgba(0, 0, 0, 0.25)" />
+
+  <!-- Body -->
+  <circle cx="32" cy="36" r="16" fill="#3498db" stroke="#21618c" stroke-width="2" />
+
+  <!-- Belt -->
+  <rect x="24" y="42" width="16" height="4" fill="#2c3e50" rx="1" />
+
+  <!-- Head -->
+  <circle cx="32" cy="20" r="10" fill="#f1c27d" stroke="#b68b60" stroke-width="2" />
+
+  <!-- Helmet / Hairband -->
+  <path d="M22 18 A10 10 0 0 1 42 18" fill="none" stroke="#5d6d7e" stroke-width="4" />
+
+  <!-- Eyes -->
+  <circle cx="28" cy="19" r="1.5" fill="#000" />
+  <circle cx="36" cy="19" r="1.5" fill="#000" />
+
+  <!-- Hands -->
+  <circle cx="16" cy="36" r="4" fill="#f1c27d" />
+  <circle cx="48" cy="36" r="4" fill="#f1c27d" />
+
+  <!-- Boots -->
+  <rect x="24" y="50" width="6" height="6" fill="#333" rx="1" />
+  <rect x="34" y="50" width="6" height="6" fill="#333" rx="1" />
+</svg>

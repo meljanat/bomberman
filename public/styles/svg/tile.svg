@@ -1,0 +1,10 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Base tile background -->
+  <rect x="0" y="0" width="64" height="64" fill="#2e2e2e" />
+
+  <!-- Subtle inner bevel effect -->
+  <rect x="2" y="2" width="60" height="60" fill="#3b3b3b" stroke="#1c1c1c" stroke-width="2" rx="4" />
+
+  <!-- Grid-like texture lines -->
+  <path d="M0 32 H64 M32 0 V64" stroke="#666" stroke-width="0.5" opacity="0.15"/>
+</svg>
