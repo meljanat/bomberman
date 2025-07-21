@@ -118,13 +118,13 @@ wss.on('connection', (ws) => {
                     players = players.filter(a => a.id != player.id);
                 }
                 for (play of players) {
-                    if (play.position > pl_pos && gameState != 'playing') {
-                        const playerPosition = positions[play.position];
+                    if (pl_pos && play.position > pl_pos && gameState != 'playing') {                        
                         play.position -= 1
-
+                        const playerPosition = positions[play.position];
+                        play.pixelX = playerPosition.x * TILE_SIZE
+                        play.pixelY = playerPosition.y * TILE_SIZE
                         play.x = playerPosition.x
-
-                        play.y = playerPosition.y
+                        play.y = playerPosition.y  
                     }
                 }
                 if (players.length < 2) {
@@ -162,11 +162,13 @@ wss.on('connection', (ws) => {
                     });
                 }
                 for (play of players) {
-                    if (pl_pos && play.position > pl_pos && gameState != 'playing') {
+                    if (pl_pos && play.position > pl_pos && gameState != 'playing') {                        
                         play.position -= 1
                         const playerPosition = positions[play.position];
+                        play.pixelX = playerPosition.x * TILE_SIZE
+                        play.pixelY = playerPosition.y * TILE_SIZE
                         play.x = playerPosition.x
-                        play.y = playerPosition.y
+                        play.y = playerPosition.y  
                     }
                 }
             } else if (data.type === 'resize') {
