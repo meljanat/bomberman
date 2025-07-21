@@ -240,13 +240,13 @@ const appEmit = (actionType, payload) => {
                         ...currentState,
                         players: data.players,
                         powerUps: data.powerUps,
-                        currentPlayer: data.players.resetGamefind(p => p.name === currentState.playerName)
+                        currentPlayer: data.players.find(p => p.name === currentState.playerName)
                     };
                     break;
                 case 'newMessage':
                     newState = {
                         ...currentState,
-                        messages: [...(currentState.messages || []), data.message]
+                        messages: [data.message, ...(currentState.messages || [])]
                     };
                     break;
                 case 'messageHistory':
@@ -377,7 +377,6 @@ function setupKeyboardControls(emitFn) {
         }
 
         if (direction) {
-            console.log(event.key);
             event.preventDefault();
             emitFn('sendMove', direction);
         }
@@ -471,6 +470,7 @@ function renderChat(state, emitFn) {
                 class: 'chat-send-btn',
                 on: {
                     click: () => {
+
                         const message = state.chatInput.trim();
                         if (message) {
                             emitFn('sendChatMessage', message);
@@ -565,7 +565,7 @@ function renderWaiting(state, emitFn) {
                 createElement('h3', {}, ['Players in lobby:']),
                 ...(state.players || []).map(player =>
                     createElement('div', { class: 'player-item', key: player.id }, [
-                        createElement('span', { class: `player-status-dot ${player.connected ? 'online' : 'offline'}` }),
+                        // createElement('span', { class: `player-status-dot ${player.connected ? 'online' : 'offline'}` }),
                         `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
                     ])
                 )
@@ -584,8 +584,8 @@ function renderWaiting(state, emitFn) {
                     }
                 }, ['Back to Menu'])
             ]),
-            createElement('div', { class: 'chat-section' }, [
-                createElement('h3', { class: 'chat-section-title' }, ['Lobby Chat']),
+            createElement('div', { class: 'chat-container' }, [
+                createElement('h3', { class: 'chat-container-title' }, ['Lobby Chat']),
                 renderChatMessages(state),
                 createElement('div', { class: 'chat-input-container' }, [
                     createElement('input', {
@@ -635,7 +635,7 @@ function renderCountdown(state, emitFn) {
                 createElement('h3', {}, ['Players:']),
                 ...state.players.map(player =>
                     createElement('div', { class: 'player-item', key: player.id }, [
-                        createElement('span', { class: `player-status-dot ${player.connected ? 'online' : 'offline'}` }),
+                        // createElement('span', { class: `player-status-dot ${player.connected ? 'online' : 'offline'}` }),
                         `🎮 ${player.name}${player.name === state.playerName ? ' (You)' : ''}`
                     ])
                 )

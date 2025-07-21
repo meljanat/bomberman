@@ -60,7 +60,7 @@ let countdownTimerroom = null;
 let ten_sec = 10;
 let twenty_sec = 20;
 let TILE_SIZE = 60;
-let MOVE_SPEED = 5;
+let MOVE_SPEED = 6;
 let messages = [];
 let move_bomb = false;
 let board = [
@@ -91,7 +91,7 @@ let playerConnections = new Map();
 wss.on('connection', (ws) => {
     ws.send(JSON.stringify({
         type: 'chatHistory',
-        messages: messages
+        messages: messages.reverse()
     }));
 
     ws.on('message', (message) => {
@@ -231,7 +231,7 @@ function handleChatMessage(player, messageText, ws) {
     broadcast(JSON.stringify({
         type: 'newMessage',
         message: message,
-        messages: messages,
+        messages: messages.reverse(),
         sender: player.name
     }));
 }
@@ -305,7 +305,6 @@ function handlePlayerJoin(ws, name) {
 function startCountdownRoom() {
     clearGameTimers();
     gameState = 'waiting';
-    twenty_sec = 5;
     players.map(a => {
         broadcast(JSON.stringify({ type: 'waiting', secondsroom: twenty_sec, countdownroom: twenty_sec, players }), a.id);
     });
@@ -326,7 +325,6 @@ function startCountdownRoom() {
 
 function startCountdown() {
     gameState = 'countdown';
-    ten_sec = 2;
     clearGameTimers();
 
     players.map(a => {
@@ -436,7 +434,7 @@ function handlePlayerMove(player, direction) {
     else if (direction === 'left') newX -= moveDistance;
     else if (direction === 'right') newX += moveDistance;
 
-    const playerSize = TILE_SIZE * 0.8;
+    const playerSize = TILE_SIZE * 0.7;
     newX = Math.max(0, Math.min(newX, (gridSize * TILE_SIZE) - playerSize));
     newY = Math.max(0, Math.min(newY, (gridSize * TILE_SIZE) - playerSize));
 
@@ -583,7 +581,7 @@ function explodeBomb(bomb) {
                 if (board[explY][explX] === 1) {
                     board[explY][explX] = 0;
 
-                    if (Math.random() < 0.3) {
+                    if (Math.random() < 0.5) {
                         spawnPowerUp(explX, explY);
                     }
                     break;
@@ -606,7 +604,7 @@ function explodeBomb(bomb) {
             if (hitPlayer.lives <= 0) {
                 hitPlayer.alive = false;
                 dropPowerUpOnDeath(hitPlayer);
-                broadcast(JSON.stringify({type:'gameReset' }), hitPlayer.id)
+                broadcast(JSON.stringify({ type: 'gameReset' }), hitPlayer.id)
                 players = players.filter(p => p.id != hitPlayer.id)
                 playerConnections.delete(hitPlayer.id)
 
@@ -654,7 +652,7 @@ function dropPowerUpOnDeath(player) {
         type: type
     };
     powerUps.push(powerUp);
-}   
+}
 
 function checkGameOver() {
     const alivePlayers = players.filter(p => p.alive);
@@ -668,14 +666,16 @@ function checkGameOver() {
                 winner: winner
             }), a.id);
         });
-        resetGame();
+        setTimeout(() => {
+            resetGame();
+        }, 2000)
     }
 }
 
 function resetGame() {
     bombs = [];
     players = [];
-    broadcast(JSON.stringify({type:'gameReset', players, bombs }))
+    broadcast(JSON.stringify({ type: 'gameReset', players, bombs }))
     playerConnections.clear();
     powerUps = [];
     gridSize = 11;
