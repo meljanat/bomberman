@@ -421,13 +421,14 @@ function stopGameLoop() {
     }
 }
 
+
 function renderChatMessages(state) {
     if (!state.messages || state.messages.length === 0) {
         return createElement('div', { class: 'chat-empty' }, ['No messages yet...']);
     }
     return createElement('div', { class: 'chat-messages' },
-        state.messages.map(msg =>
-            createElement('div', { class: 'chat-message', key: msg.id || `${msg.sender}-${msg.timestamp}` }, [
+        state.messages.map((msg, index) =>
+            createElement('div', { class: 'chat-message', key: `msg-${index}-${msg.sender}-${msg.timestamp || Date.now()}` }, [
                 createElement('span', { class: 'chat-sender' }, [`${msg.sender}: `]),
                 createElement('span', { class: 'chat-text' }, [msg.text])
             ])
@@ -719,11 +720,23 @@ function renderGame(state, emitFn) {
 
     state.players.forEach(player => {
         if (player.lives > 0) {
+            // Calculate center position for circular player
+            const tileSize = 60; // Assuming 32px tiles, adjust as needed
+            const playerSize = 48; // Slightly smaller than tile for better fit
+            const offsetX = (tileSize - playerSize) / 2;
+            const offsetY = (tileSize - playerSize) / 2;
+            
             gridChildren.push(createElement('div', {
                 class: `player player-${player.id}${player.name === state.playerName ? ' current-player' : ''}`,
                 title: player.name,
                 key: `player-${player.id}`,
-                style: `transform: translate(${player.pixelX}px, ${player.pixelY}px)`
+                style: `
+                    transform: translate(${player.pixelX + offsetX}px, ${player.pixelY + offsetY}px);
+                    width: ${playerSize}px;
+                    height: ${playerSize}px;
+                    border-radius: 50%;
+                    transition: transform 0.1s ease-out;
+                `
             }));
         }
     });
