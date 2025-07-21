@@ -6,7 +6,7 @@
 }
 
 body {
-    background-image: url('43mb.png');
+    background-image: url('lord_of_mysteries.png');
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -499,24 +499,24 @@ body {
 /* Game entities */
 .player {
     position: absolute;
-    width: 42px;
-    height: 42px;
+    width: 54px;
+    height: 54px;
     /* top: 1%;
     left: 1%; */
     background-image: url('usopp.png');
     background-size: cover;
     z-index: 10;
     border-radius: 50%;
-    border: 3px solid rgba(255, 255, 255, 0.9);
+    /* border: 3px solid rgba(255, 255, 255, 0.9); */
     transition: all 0.1s linear;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    /* box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); */
     animation: playerFloat 2s ease-in-out infinite alternate;
 }
 
-.current-player {
-    border-color: #2ecc71;
-    box-shadow: 0 0 20px rgba(46, 204, 113, 0.8), 0 0 30px rgba(46, 204, 113, 0.5);
-}
+/* .current-player { */
+/* border-color: #2ecc71; */
+/* box-shadow: 0 0 20px rgba(46, 204, 113, 0.8), 0 0 30px rgba(46, 204, 113, 0.5); */
+/* } */
 
 .bomb {
     position: absolute;

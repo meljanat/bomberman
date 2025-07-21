@@ -268,6 +268,15 @@ const appEmit = (actionType, payload) => {
                         statusMessage: 'Game reset ..., You can join to play again',
                     };
                     break;
+                case 'playerDead':
+                    newState = {
+                        ...initialState,
+                        connected: currentState.connected,
+                        playerName: currentState.playerName,
+                        screen: 'menu',
+                        errorMessage: 'You lose, join to try again.',
+                    }
+                    break;
                 case 'chatHistory':
                     newState = { ...currentState, messages: data.messages || [] };
                     break;
@@ -323,63 +332,19 @@ const appEmit = (actionType, payload) => {
 };
 
 let keyHandler = null;
-let keysPressed = new Set();
+let keysPressed = {};
 
 const keyUpHandler = (event) => {
-    keysPressed.delete(event.key);
+    keysPressed[event.key] = false;
 };
 
-function setupKeyboardControls(emitFn) {
-    if (keyHandler) {
-        document.removeEventListener('keydown', keyHandler);
-        document.removeEventListener('keyup', keyUpHandler);
-    }
-
+function setupKeyboardControls() {
     keyHandler = (event) => {
         if (document.activeElement && document.activeElement.tagName === 'INPUT') {
             return;
         }
 
-        keysPressed.add(event.key);
-
-        let direction = null;
-
-        switch (event.key) {
-            case 'ArrowUp':
-            case 'w':
-            case 'W':
-                direction = 'up';
-                break;
-            case 'ArrowDown':
-            case 's':
-            case 'S':
-                direction = 'down';
-                break;
-            case 'ArrowLeft':
-            case 'a':
-            case 'A':
-                direction = 'left';
-                break;
-            case 'ArrowRight':
-            case 'd':
-            case 'D':
-                direction = 'right';
-                break;
-            case ' ':
-                event.preventDefault();
-                emitFn('placeBomb');
-                return;
-            case 'c':
-            case 'C':
-                event.preventDefault();
-                emitFn('toggleChat');
-                return;
-        }
-
-        if (direction) {
-            event.preventDefault();
-            emitFn('sendMove', direction);
-        }
+        keysPressed[event.key] = true;
     };
 
     window.keyUpHandler = keyUpHandler;
@@ -392,7 +357,7 @@ function removeKeyboardControls() {
         document.removeEventListener('keydown', keyHandler);
         document.removeEventListener('keyup', window.keyUpHandler);
         keyHandler = null;
-        keysPressed.clear();
+        keysPressed = {};
     }
 }
 
@@ -405,6 +370,8 @@ function startGameLoop(emitFn) {
             emitFn('updateFPS', fpsDisplay);
         }
         frameCount++;
+
+        updatePlayer(emitFn);
 
         animationId = requestAnimationFrame(gameLoop);
     }
@@ -706,6 +673,21 @@ function renderPlayerStats(state) {
     ]);
 }
 
+function updatePlayer(emitFn) {
+    let direction = null;
+
+    if (keysPressed['ArrowUp']) direction = 'up';
+    else if (keysPressed['ArrowDown']) direction = 'down';
+    else if (keysPressed['ArrowRight']) direction = 'right';
+    else if (keysPressed['ArrowLeft']) direction = 'left';
+    else if (keysPressed[' ']) emitFn('placeBomb');
+    else if (keysPressed['c'] || keysPressed['C']) emitFn('toggleChat');
+
+    if (direction) {
+        emitFn('sendMove', direction);
+    }
+}
+
 function renderGame(state, emitFn) {
     setupKeyboardControls(emitFn);
     startGameLoop(emitFn);
@@ -872,7 +854,8 @@ setTimeout(() => {
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        stopGameLoop();
+        // stopGameLoop();
+        removeKeyboardControls();
     } else {
         const state = appStateManager.getState();
         if (state && state.screen === 'game') {
