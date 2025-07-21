@@ -344,7 +344,12 @@ function setupKeyboardControls() {
             return;
         }
 
-        keysPressed[event.key] = true;
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'ArrowRight'
+            || event.key === 'ArrowLeft' || event.key === ' ' || event.key === 'c' || event.key === 'C') {
+            event.preventDefault();
+
+            keysPressed[event.key] = true;
+        }
     };
 
     window.keyUpHandler = keyUpHandler;
@@ -699,10 +704,10 @@ function renderGame(state, emitFn) {
         }
     }
 
-    state.players.forEach(player => {
+    state.players.forEach((player, i) => {
         if (player.lives > 0) {
             gridChildren.push(createElement('div', {
-                class: `player player-${player.id}${player.name === state.playerName ? ' current-player' : ''}`,
+                class: `player player-${i + 1}`,
                 title: player.name,
                 key: `player-${player.id}`,
                 style: `transform: translate(${player.pixelX}px, ${player.pixelY}px)`
@@ -736,7 +741,7 @@ function renderGame(state, emitFn) {
         ]),
 
         createElement('div', { class: 'game-main' }, [
-            createElement('div', { class: 'game-grid' }, gridChildren),
+            createElement('div', { class: 'game-grid', autofocus: true }, gridChildren),
 
             createElement('div', { class: 'game-sidebar' }, [
                 renderPlayerStats(state),
@@ -854,13 +859,8 @@ setTimeout(() => {
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        // stopGameLoop();
+        window.blur()
         removeKeyboardControls();
-    } else {
-        const state = appStateManager.getState();
-        if (state && state.screen === 'game') {
-            startGameLoop(appEmit);
-        }
     }
 });
 

@@ -60,7 +60,7 @@ let countdownTimerroom = null;
 let ten_sec = 10;
 let twenty_sec = 20;
 let TILE_SIZE = 60;
-let MOVE_SPEED = 6;
+let MOVE_SPEED = 5;
 let messages = [];
 let board = [
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
@@ -90,7 +90,7 @@ let playerConnections = new Map();
 wss.on('connection', (ws) => {
     ws.send(JSON.stringify({
         type: 'chatHistory',
-        messages: messages
+        messages: messages.reverse()
     }));
 
     ws.on('message', (message) => {
@@ -118,13 +118,13 @@ wss.on('connection', (ws) => {
                     players = players.filter(a => a.id != player.id);
                 }
                 for (play of players) {
-                    if (pl_pos && play.position > pl_pos && gameState != 'playing') {                        
+                    if (pl_pos && play.position > pl_pos && gameState != 'playing') {
                         play.position -= 1
                         const playerPosition = positions[play.position];
                         play.pixelX = playerPosition.x * TILE_SIZE
                         play.pixelY = playerPosition.y * TILE_SIZE
                         play.x = playerPosition.x
-                        play.y = playerPosition.y  
+                        play.y = playerPosition.y
                     }
                 }
                 if (players.length < 2) {
@@ -162,13 +162,13 @@ wss.on('connection', (ws) => {
                     });
                 }
                 for (play of players) {
-                    if (pl_pos && play.position > pl_pos && gameState != 'playing') {                        
+                    if (pl_pos && play.position > pl_pos) {
                         play.position -= 1
                         const playerPosition = positions[play.position];
                         play.pixelX = playerPosition.x * TILE_SIZE
                         play.pixelY = playerPosition.y * TILE_SIZE
                         play.x = playerPosition.x
-                        play.y = playerPosition.y  
+                        play.y = playerPosition.y
                     }
                 }
             } else if (data.type === 'resize') {
@@ -232,7 +232,7 @@ function handleChatMessage(player, messageText, ws) {
     broadcast(JSON.stringify({
         type: 'newMessage',
         message: message,
-        messages: messages,
+        messages: messages.reverse(),
         sender: player.name
     }));
 }
@@ -690,10 +690,10 @@ function checkPowerUpCollection(player) {
 function applyPowerUp(player, powerUp) {
     switch (powerUp.type) {
         case 'bombs':
-            player.bombCount++;
+            player.bombCount = Math.min(player.bombCount + 1, 3);
             break;
         case 'flames':
-            player.flameSize++;
+            player.flameSize = Math.min(player.flameSize + 1, 3);
             break;
         case 'speed':
             player.speed = Math.min(player.speed + 0.5, 2);

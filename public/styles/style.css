@@ -32,24 +32,16 @@ body {
     position: relative;
     width: 100%;
     max-width: 1200px;
-    /* Max width for larger screens */
     min-height: 100vh;
     background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(46, 26, 46, 0.9));
-    /* Darker, more atmospheric gradient */
     backdrop-filter: blur(15px);
     opacity: 90%;
-    /* Stronger blur */
     border: 2px solid rgba(255, 255, 255, 0.05);
-    /* Subtle border */
     border-radius: 15px;
-    /* Rounded corners for the main container */
     display: flex;
     flex-direction: column;
     padding: 20px;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
-    /* Deeper shadow */
-    overflow: hidden;
-    /* Ensure content stays within bounds */
 }
 
 /* Card-like styling for various sections */
@@ -404,7 +396,7 @@ body {
     background: rgba(0, 0, 0, 0.9);
     /* padding: 15px; */
     border-radius: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    /* border: 2px solid rgba(255, 255, 255, 0.1); */
     width: 660px;
     height: 660px;
     /* Increased max-width for better visibility */
@@ -503,14 +495,32 @@ body {
     height: 54px;
     /* top: 1%;
     left: 1%; */
-    background-image: url('usopp.png');
-    background-size: cover;
     z-index: 10;
     border-radius: 50%;
     /* border: 3px solid rgba(255, 255, 255, 0.9); */
     transition: all 0.1s linear;
     /* box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); */
     animation: playerFloat 2s ease-in-out infinite alternate;
+}
+
+.player-1 {
+    background-image: url('zoro.png');
+    background-size: cover;
+}
+
+.player-2 {
+    background-image: url('luffy.png');
+    background-size: cover;
+}
+
+.player-3 {
+    background-image: url('chopper.png');
+    background-size: cover;
+}
+
+.player-4 {
+    background-image: url('jin.png');
+    background-size: cover;
 }
 
 /* .current-player { */
@@ -1094,11 +1104,6 @@ body {
         align-items: center;
     }
 
-    /* .game-grid {
-        max-width: 550px;
-        margin: 0 auto;
-    } */
-
     .game-sidebar {
         max-width: 550px;
         /* Allow sidebar to take more width */
@@ -1150,13 +1155,6 @@ body {
         font-size: 1rem;
         min-width: 100px;
     }
-
-    /* .game-grid {
-        height: 70vw;
-        max-height: 450px;
-        padding: 10px;
-        border-radius: 10px;
-    } */
 
     .menu-form {
         padding: 30px;
@@ -1248,14 +1246,6 @@ body {
     .btn-small {
         padding: 8px 12px;
         font-size: 0.85rem;
-    }
-
-    .game-grid {
-        height: 90vw;
-        /* Maximize grid size on very small screens */
-        max-height: 350px;
-        padding: 8px;
-        gap: 1px;
     }
 
     .menu-form {
