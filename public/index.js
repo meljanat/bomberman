@@ -495,6 +495,7 @@ function startGameLoop(emit) {
             emit('clearExplosions');
         }
 
+        getDirectionFromKeys();
         animationId = requestAnimationFrame(gameLoop);
     }
 
@@ -989,7 +990,8 @@ setTimeout(() => {
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        stopGameLoop();
+        // stopGameLoop();
+        removeKeyboardControls();
     } else if (window.appEmit) {
         const state = app.getState();
         if (state && state.screen === 'game') {
