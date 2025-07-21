@@ -38,7 +38,6 @@ const reducers = {
     updatePlayerName: (state, name) => ({
         ...state,
         playerName: name,
-        errorMessage: ''
     }),
 
     updateChatInput: (state, message) => ({
@@ -331,6 +330,16 @@ const reducers = {
                     errorMessage: '',
                     screen: 'menu',
                 };
+            
+            case 'playerDead':
+                return {
+                    ...initialState,
+                    connected: state.connected,
+                    playerName: state.playerName,
+                    statusMessage: '',
+                    errorMessage: 'You lost try again',
+                    screen: 'menu',
+                }
 
             case 'chatHistory':
                 return {
@@ -391,8 +400,6 @@ let keysPressed = new Set();
 
 const keyUpHandler = (event) => {
     keysPressed.delete(event.key.toLowerCase());
-
-    // Stop movement if no movement keys are pressed
     if (!hasMovementKey() && movementInterval) {
         clearInterval(movementInterval);
         movementInterval = null;
@@ -405,12 +412,6 @@ function hasMovementKey() {
 }
 
 function getDirectionFromKeys() {
-    let el = document.getElementsByClassName('.tile');
-    if (!el) {
-        const rect = el.getBoundingClientRect();
-        console.log('Width:', rect.width);
-        console.log('Height:', rect.height);
-    }
     if (keysPressed.has('arrowup') || keysPressed.has('z')) return 'up';
     if (keysPressed.has('arrowdown') || keysPressed.has('s')) return 'down';
     if (keysPressed.has('arrowleft') || keysPressed.has('q')) return 'left';
@@ -702,11 +703,6 @@ function renderWaiting(state, emit) {
                             click: (e) => {
                                 const input = e.target.parentElement.querySelector('input');
                                 const message = input.value.trim();
-
-                                console.log(input);
-                                console.log(message);
-
-
                                 if (message) {
                                     emit('sendChatMessage', message);
                                     input.value = '';
@@ -987,7 +983,7 @@ app.mount(document.getElementById('game-container'));
 window.appEmit = app.emit;
 
 setTimeout(() => {
-    // console.log('Attempting initial connection to server...');
+    console.log('Attempting initial connection to server...');
     window.appEmit('connectToServer');
 }, 2000);
 
@@ -1009,13 +1005,9 @@ window.addEventListener('beforeunload', () => {
 
 window.addEventListener('resize', () => {
     const el = document.querySelector('.tile.wall');
-    console.log(el, 'Resize event triggered');
-
     if (el) {
         const width = el.offsetWidth;
         const height = el.offsetHeight;
-        console.log('Width:', width);
-        console.log('Height:', height);
         TILE_SIZE = width;
         socket.send(JSON.stringify({ type: 'resize', width, height }));
     }

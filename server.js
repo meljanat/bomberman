@@ -61,7 +61,6 @@ let twenty_sec = 20;
 let TILE_SIZE = 60;
 let MOVE_SPEED = 6;
 let messages = [];
-let move_bomb = false;
 let board = [
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
     [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
@@ -98,10 +97,6 @@ wss.on('connection', (ws) => {
             const data = JSON.parse(message);
 
             if (data.type === 'start') {
-                console.log('Received start message:', data);
-                console.log('Player name:', playerConnections);
-                
-                
                 handlePlayerJoin(ws, data.name);
             } else if (data.type === 'move') {
                 const player = getPlayerByWebSocket(ws);
@@ -175,7 +170,6 @@ wss.on('connection', (ws) => {
                 }
             } else if (data.type === 'resize') {
                 TILE_SIZE = data.width
-                console.log(TILE_SIZE);
             }
         } catch (error) {
             console.error('Error parsing message:', error);
@@ -445,17 +439,184 @@ function handlePlayerMove(player, direction) {
     newY = Math.max(0, Math.min(newY, (gridSize * TILE_SIZE) - playerSize));
 
     if (checkTileAdvanced(player, newX, newY)) {
-        player.pixelX = newX;
-        player.pixelY = newY;
-
-        const centerX = newX + (playerSize / 2);
-        const centerY = newY + (playerSize / 2);
-        player.x = Math.floor(centerX / TILE_SIZE);
-        player.y = Math.floor(centerY / TILE_SIZE);
-
-        checkPowerUpCollection(player);
-        broadcast(JSON.stringify({ type: 'playerMoved', players }));
+        updatePlayerPosition(player, newX, newY, playerSize);
+        return;
     }
+
+    const nudgeResult = tryNudgeMovement(player, newX, newY, direction, playerSize);
+    if (nudgeResult) {
+        updatePlayerPosition(player, nudgeResult.x, nudgeResult.y, playerSize);
+    }
+}
+
+function tryNudgeMovement(player, newX, newY, direction, playerSize) {
+    const currentX = player.pixelX !== undefined ? player.pixelX : (player.x * TILE_SIZE);
+    const currentY = player.pixelY !== undefined ? player.pixelY : (player.y * TILE_SIZE);
+    
+    const nudgeDistance = TILE_SIZE * 0.5;
+    const nudgeSteps = 5;
+    
+    if (direction === 'left' || direction === 'right') {
+        for (let i = 1; i <= nudgeSteps; i++) {
+            const nudgeUp = currentY - (nudgeDistance * i / nudgeSteps);
+            const nudgeDown = currentY + (nudgeDistance * i / nudgeSteps);
+            
+            if (nudgeUp >= 0 && checkTileAdvanced(player, newX, nudgeUp)) {
+                return { x: newX, y: nudgeUp };
+            }
+            
+            if (nudgeDown + playerSize <= gridSize * TILE_SIZE && checkTileAdvanced(player, newX, nudgeDown)) {
+                return { x: newX, y: nudgeDown };
+            }
+        }
+        
+        if (checkHorizontalMovement(player, newX, currentY)) {
+            return { x: newX, y: currentY };
+        }
+    }
+    
+    if (direction === 'up' || direction === 'down') {
+        for (let i = 1; i <= nudgeSteps; i++) {
+            const nudgeLeft = currentX - (nudgeDistance * i / nudgeSteps);
+            const nudgeRight = currentX + (nudgeDistance * i / nudgeSteps);
+            
+            if (nudgeLeft >= 0 && checkTileAdvanced(player, nudgeLeft, newY)) {
+                return { x: nudgeLeft, y: newY };
+            }
+            
+            if (nudgeRight + playerSize <= gridSize * TILE_SIZE && checkTileAdvanced(player, nudgeRight, newY)) {
+                return { x: nudgeRight, y: newY };
+            }
+        }
+        
+        if (checkVerticalMovement(player, currentX, newY)) {
+            return { x: currentX, y: newY };
+        }
+    }
+    
+    return null;
+}
+
+function checkHorizontalMovement(player, newX, y) {
+    const playerSize = TILE_SIZE * 0.8;
+    const playerLeft = newX;
+    const playerRight = newX + playerSize;
+    const playerTop = y;
+    const playerBottom = y + playerSize;
+
+    const leftTile = Math.floor(playerLeft / TILE_SIZE);
+    const rightTile = Math.floor((playerRight - 1) / TILE_SIZE);
+    const topTile = Math.floor(playerTop / TILE_SIZE);
+    const bottomTile = Math.floor((playerBottom - 1) / TILE_SIZE);
+
+    const currentX = player.pixelX !== undefined ? player.pixelX : (player.x * TILE_SIZE);
+    const currentY = player.pixelY !== undefined ? player.pixelY : (player.y * TILE_SIZE);
+    const currentCenterX = Math.floor((currentX + playerSize / 2) / TILE_SIZE);
+    const currentCenterY = Math.floor((currentY + playerSize / 2) / TILE_SIZE);
+
+    for (let x = leftTile; x <= rightTile; x++) {
+        for (let tileY = topTile; tileY <= bottomTile; tileY++) {
+            if (x < 0 || x >= gridSize || tileY < 0 || tileY >= gridSize) {
+                return false;
+            }
+
+            if (board[tileY][x] === 1 || board[tileY][x] === 2) {
+                return false;
+            }
+
+            const bomb = bombs.find(bomb => bomb.x === x && bomb.y === tileY);
+            if (bomb) {
+                if (currentCenterX === x && currentCenterY === tileY) {
+                    const bombCenterX = x * TILE_SIZE + TILE_SIZE / 2;
+                    const bombCenterY = tileY * TILE_SIZE + TILE_SIZE / 2;
+                    const currentDistanceFromBomb = Math.abs(currentX + playerSize/2 - bombCenterX) + Math.abs(currentY + playerSize/2 - bombCenterY);
+                    const newDistanceFromBomb = Math.abs(newX + playerSize/2 - bombCenterX) + Math.abs(y + playerSize/2 - bombCenterY);
+                    if (newDistanceFromBomb <= currentDistanceFromBomb) {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+            const hasOtherPlayer = players.some(p =>
+                p.id !== player.id && p.x === x && p.y === tileY
+            );
+            if (hasOtherPlayer) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function checkVerticalMovement(player, x, newY) {
+    const playerSize = TILE_SIZE * 0.8;
+    const playerLeft = x;
+    const playerRight = x + playerSize;
+    const playerTop = newY;
+    const playerBottom = newY + playerSize;
+
+    const leftTile = Math.floor(playerLeft / TILE_SIZE);
+    const rightTile = Math.floor((playerRight - 1) / TILE_SIZE);
+    const topTile = Math.floor(playerTop / TILE_SIZE);
+    const bottomTile = Math.floor((playerBottom - 1) / TILE_SIZE);
+
+    const currentX = player.pixelX !== undefined ? player.pixelX : (player.x * TILE_SIZE);
+    const currentY = player.pixelY !== undefined ? player.pixelY : (player.y * TILE_SIZE);
+    const currentCenterX = Math.floor((currentX + playerSize / 2) / TILE_SIZE);
+    const currentCenterY = Math.floor((currentY + playerSize / 2) / TILE_SIZE);
+
+    for (let tileX = leftTile; tileX <= rightTile; tileX++) {
+        for (let y = topTile; y <= bottomTile; y++) {
+            if (tileX < 0 || tileX >= gridSize || y < 0 || y >= gridSize) {
+                return false;
+            }
+
+            if (board[y][tileX] === 1 || board[y][tileX] === 2) {
+                return false;
+            }
+
+            const bomb = bombs.find(bomb => bomb.x === tileX && bomb.y === y);
+            if (bomb) {
+                if (currentCenterX === tileX && currentCenterY === y) {
+                    const bombCenterX = tileX * TILE_SIZE + TILE_SIZE / 2;
+                    const bombCenterY = y * TILE_SIZE + TILE_SIZE / 2;
+                    const currentDistanceFromBomb = Math.abs(currentX + playerSize/2 - bombCenterX) + Math.abs(currentY + playerSize/2 - bombCenterY);
+                    const newDistanceFromBomb = Math.abs(x + playerSize/2 - bombCenterX) + Math.abs(newY + playerSize/2 - bombCenterY);
+                    
+                    if (newDistanceFromBomb <= currentDistanceFromBomb) {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+            const hasOtherPlayer = players.some(p =>
+                p.id !== player.id && p.x === tileX && p.y === y
+            );
+            if (hasOtherPlayer) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function updatePlayerPosition(player, newX, newY, playerSize) {
+    player.pixelX = newX;
+    player.pixelY = newY;
+
+    const centerX = newX + (playerSize / 2);
+    const centerY = newY + (playerSize / 2);
+    player.x = Math.floor(centerX / TILE_SIZE);
+    player.y = Math.floor(centerY / TILE_SIZE);
+
+    checkPowerUpCollection(player);
+    broadcast(JSON.stringify({ type: 'playerMoved', players }));
 }
 
 function checkTileAdvanced(player, newPixelX, newPixelY) {
@@ -470,42 +631,45 @@ function checkTileAdvanced(player, newPixelX, newPixelY) {
     const topTile = Math.floor(playerTop / TILE_SIZE);
     const bottomTile = Math.floor((playerBottom - 1) / TILE_SIZE);
 
+    const currentX = player.pixelX !== undefined ? player.pixelX : (player.x * TILE_SIZE);
+    const currentY = player.pixelY !== undefined ? player.pixelY : (player.y * TILE_SIZE);
+    const currentCenterX = Math.floor((currentX + playerSize / 2) / TILE_SIZE);
+    const currentCenterY = Math.floor((currentY + playerSize / 2) / TILE_SIZE);
+
     for (let x = leftTile; x <= rightTile; x++) {
         for (let y = topTile; y <= bottomTile; y++) {
             if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) {
-                console.log(`Tile (${x}, ${y}) is outside grid bounds`);
                 return false;
             }
 
             if (board[y][x] === 1 || board[y][x] === 2) {
-                console.log(`Tile (${x}, ${y}) is a wall/block (value: ${board[y][x]})`);
                 return false;
             }
 
-            const hasBomb = bombs.some(bomb => bomb.x === x && bomb.y === y);
-            if (hasBomb) {
-                // setTimeout(() => {
-                //     move_bomb = true;
-                // }, 1000);
-                // if (move_bomb) {
-                //     move_bomb = false;
-                //     console.log(`Tile (${x}, ${y}) has a bomb`);
-                // }
-                    return true;
+            const bomb = bombs.find(bomb => bomb.x === x && bomb.y === y);
+            if (bomb) {
+                const newCenterX = Math.floor((newPixelX + playerSize / 2) / TILE_SIZE);
+                const newCenterY = Math.floor((newPixelY + playerSize / 2) / TILE_SIZE);
+                
+                if (currentCenterX === x && currentCenterY === y) {
+                    continue;
+                }
+                if (newCenterX === x && newCenterY === y) {
+                    return false;
+                }
             }
 
             const hasOtherPlayer = players.some(p =>
                 p.id !== player.id && p.x === x && p.y === y
             );
             if (hasOtherPlayer) {
-                console.log(`Tile (${x}, ${y}) has another player`);
                 return false;
             }
         }
     }
-
     return true;
 }
+
 
 function checkPowerUpCollection(player) {
     const powerUpIndex = powerUps.findIndex(powerUp =>
@@ -608,9 +772,13 @@ function explodeBomb(bomb) {
             if (hitPlayer.lives <= 0) {
                 hitPlayer.alive = false;
                 dropPowerUpOnDeath(hitPlayer);
-                broadcast(JSON.stringify({type: 'gameReset'}), hitPlayer.id)
-                players = players.filter(a => a.id != hitPlayer.id);
-                playerConnections.delete(hitPlayer.id)              
+                if (players.length !== 2) {
+                    setTimeout(() => {
+                        broadcast(JSON.stringify({ type: 'playerDead'}), hitPlayer.id);
+                    }, 1000);
+                    players = players.filter(a => a.id != hitPlayer.id);
+                    playerConnections.delete(hitPlayer.id)              
+                }
             } else {
                 const startPos = positions[hitPlayer.position % positions.length];
                 hitPlayer.x = startPos.x;
@@ -660,7 +828,6 @@ function dropPowerUpOnDeath(player) {
 function checkGameOver() {
     const alivePlayers = players.filter(p => p.alive);
     if (alivePlayers.length <= 1) {
-        gameState = 'ended';
         const winner = alivePlayers.length === 1 ? alivePlayers[0] : null;
         gameStarted = false
         players.map(a => {
@@ -669,7 +836,6 @@ function checkGameOver() {
                 winner: winner
             }), a.id);
         });
-        console.log('Game over. Winner:', winner ? winner.name : 'None');
         setTimeout(() => {
             resetGame();
         }, 2000);
@@ -713,7 +879,6 @@ function resetGame() {
         { x: 1, y: 9 },
         { x: 9, y: 1 },
     ];
-    console.log('Game has been reset.');
 }
 const PORT = 8888;
 server.listen(PORT, () => {
