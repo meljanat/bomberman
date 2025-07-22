@@ -111,22 +111,13 @@ wss.on('connection', (ws) => {
                 }
             } else if (data.type === 'leaveGame') {
                 const player = getPlayerByWebSocket(ws);
-                let pl_pos = player.position
+                
                 if (player && gameState === 'playing') {
                     broadcast(JSON.stringify({ type: 'gameReset' }), player.id);
                     playerConnections.delete(player.id);
                     players = players.filter(a => a.id != player.id);
                 }
-                for (play of players) {
-                    if (pl_pos && play.position > pl_pos && gameState != 'playing') {
-                        play.position -= 1
-                        const playerPosition = positions[play.position];
-                        play.pixelX = playerPosition.x * TILE_SIZE
-                        play.pixelY = playerPosition.y * TILE_SIZE
-                        play.x = playerPosition.x
-                        play.y = playerPosition.y
-                    }
-                }
+
                 if (players.length < 2) {
                     checkGameOver();
                 }
@@ -162,7 +153,7 @@ wss.on('connection', (ws) => {
                     });
                 }
                 for (play of players) {
-                    if (pl_pos && play.position > pl_pos) {
+                    if (pl_pos !== null && play.position > pl_pos) {
                         play.position -= 1
                         const playerPosition = positions[play.position];
                         play.pixelX = playerPosition.x * TILE_SIZE
@@ -181,6 +172,9 @@ wss.on('connection', (ws) => {
 
     ws.on('close', () => {
         let player = getPlayerByWebSocket(ws);
+
+        let pl_pos = player.position
+
         if (player) {
             players = players.filter((p) => p.id !== player.id);
             playerConnections.delete(player.id);
@@ -198,6 +192,17 @@ wss.on('connection', (ws) => {
                     broadcast(JSON.stringify({ type: 'gameState', state: gameState }), p.id);
                 })
                 return;
+            }
+
+            for (play of players) {
+                if (pl_pos !== null && play.position > pl_pos && gameState != 'playing') {
+                    play.position -= 1
+                    const playerPosition = positions[play.position];
+                    play.pixelX = playerPosition.x * TILE_SIZE
+                    play.pixelY = playerPosition.y * TILE_SIZE
+                    play.x = playerPosition.x
+                    play.y = playerPosition.y
+                }
             }
 
             if (gameState !== 'playing') {
