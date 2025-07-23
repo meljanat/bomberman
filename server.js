@@ -173,7 +173,7 @@ wss.on('connection', (ws) => {
     ws.on('close', () => {
         let player = getPlayerByWebSocket(ws);
 
-        let pl_pos = player.position
+        let pl_pos = player?.position
 
         if (player) {
             players = players.filter((p) => p.id !== player.id);
